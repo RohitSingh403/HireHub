@@ -10,7 +10,7 @@ The platform is being developed with a modular backend architecture and a modern
 
 ## 🚀 Project Status
 
-**Currently in development**
+**Currently in development**  
 
 The project is being developed incrementally, starting with the backend architecture and database integration, followed by authentication, job management, applications, and the frontend.
 
@@ -93,13 +93,13 @@ Candidates will be able to manage:
 
 Separate dashboards for:
 
-**Candidates**
-- Applied jobs
+**Candidates**  
+- Applied jobs 
 - Application status
 - Profile management
 
-**Recruiters**
-- Posted jobs
+**Recruiters**  
+- Posted jobs 
 - Applicants
 - Application management
 - Job statistics
