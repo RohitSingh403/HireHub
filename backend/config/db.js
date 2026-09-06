@@ -12,3 +12,4 @@ const connectDB = async function () {
 };
 
 export default connectDB;
+
