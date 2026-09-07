@@ -1,4 +1,5 @@
 import bcrypt from "bcrypt";
+import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
 async function registerUser(req, res) {
@@ -12,7 +13,7 @@ async function registerUser(req, res) {
     }
 
     const existingUser = await User.findOne({ email });
-    
+
     if (existingUser) {
       return res.status(409).json({
         msg: "User already exists",
@@ -39,4 +40,52 @@ async function registerUser(req, res) {
   }
 }
 
-export default registerUser;
+async function loginUser(req, res) {
+  try {
+    const {email, password } = req.body;
+
+    // validate email/password
+    const user = await User.findOne({ email });
+    if (!user) {
+      return res.status(401).json({
+        msg: "Invalid email or password",
+      });
+    }
+
+    const isMatch = await bcrypt.compare(password, user.password);
+
+    if (!isMatch) {
+      return res.status(401).json({
+        msg: "Invalid email or password",
+      });
+    }
+
+    const token = jwt.sign(
+      {
+        userId: user._id,
+        role: user.role,
+      },
+      process.env.JWT_SECRET,
+      { expiresIn: "1h" },
+    );
+
+    return res.status(200).json({
+      msg: "Login Successfull",
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    });
+    // generate JWT
+    // return token + safe user data
+  } catch (err) {
+    return res.status(500).json({
+      msg: "Server error login failed",
+    });
+  }
+}
+
+export default { registerUser, loginUser };
