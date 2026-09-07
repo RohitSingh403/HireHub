@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import router from "./routes/authRoutes.js";
 
 const app = express();
 
@@ -12,5 +13,7 @@ app.get("/api/health", function (req, res) {
     msg: "HireHub API is running",
   });
 });
+
+app.use("/api/auth", router);
 
 export default app;
