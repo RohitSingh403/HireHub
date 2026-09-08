@@ -1,3 +1,4 @@
+import Company from "../models/Company.js";
 import Job from "../models/Job.js";
 
 async function createJob(req, res) {
@@ -30,6 +31,21 @@ async function createJob(req, res) {
         msg: "All fields are required",
       });
     }
+
+    const existCompany = await Company.findById(company);
+
+    if (!existCompany) {
+      return res.status(404).json({
+        msg: "Company not found",
+      });
+    }
+
+    if (existCompany.owner.toString() !== req.user.userId) {
+      return res.status(403).json({
+        msg: "Access forbidden",
+      });
+    }
+
     const newJob = await Job.create({
       title,
       description,
@@ -56,4 +72,3 @@ async function createJob(req, res) {
 }
 
 export default createJob;
-

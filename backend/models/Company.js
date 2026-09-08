@@ -35,6 +35,7 @@ const companySchema = new mongoose.Schema(
     companySize: {
       type: Number,
       required: true,
+      min:[1,"Company size must be at least 1"]
     },
     owner: {
       type: mongoose.Schema.Types.ObjectId,

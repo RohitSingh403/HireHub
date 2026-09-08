@@ -19,6 +19,6 @@ app.get("/api/health", function (req, res) {
 
 app.use("/api/auth", router);
 app.use("/api/jobs", jobRouter);
-app.use("api/companies", companyRouter);
+app.use("/api/companies", companyRouter);
 
 export default app;
