@@ -3,8 +3,6 @@ import cors from "cors";
 
 import router from "./routes/authRoutes.js";
 
-import testRouter from "./routes/testRoutes.js";
-
 const app = express();
 
 app.use(cors());
@@ -18,6 +16,5 @@ app.get("/api/health", function (req, res) {
 });
 
 app.use("/api/auth", router);
-app.use("/api/test", testRouter);
 
 export default app;
