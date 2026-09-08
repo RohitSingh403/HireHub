@@ -3,6 +3,7 @@ import cors from "cors";
 
 import router from "./routes/authRoutes.js";
 import jobRouter from "./routes/jobRoutes.js";
+import companyRouter from "./routes/companyRoutes.js";
 
 const app = express();
 
@@ -18,5 +19,6 @@ app.get("/api/health", function (req, res) {
 
 app.use("/api/auth", router);
 app.use("/api/jobs", jobRouter);
+app.use("api/companies", companyRouter);
 
 export default app;
