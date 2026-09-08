@@ -71,4 +71,11 @@ async function createJob(req, res) {
   }
 }
 
-export default createJob;
+async function getJobs(req, res) {
+  const allJobs = await Job.find();
+  return res.status(200).json({
+    msg: "All jobs",
+    allJobs: allJobs,
+  });
+}
+export { createJob, getJobs };
