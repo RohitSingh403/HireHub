@@ -6,9 +6,9 @@ async function registerUser(req, res) {
   try {
     const { name, email, password, role } = req.body;
 
-    if (!name || !email || !password || !role) {
+    if (!email || !password) {
       return res.status(400).json({
-        msg: "All fields are required",
+        msg: "Email and password are required",
       });
     }
 
@@ -42,9 +42,8 @@ async function registerUser(req, res) {
 
 async function loginUser(req, res) {
   try {
-    const {email, password } = req.body;
+    const { email, password } = req.body;
 
-    // validate email/password
     const user = await User.findOne({ email });
     if (!user) {
       return res.status(401).json({
@@ -79,8 +78,6 @@ async function loginUser(req, res) {
         role: user.role,
       },
     });
-    // generate JWT
-    // return token + safe user data
   } catch (err) {
     return res.status(500).json({
       msg: "Server error login failed",
@@ -88,4 +85,4 @@ async function loginUser(req, res) {
   }
 }
 
-export default { registerUser, loginUser };
+export { registerUser, loginUser };
