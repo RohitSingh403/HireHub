@@ -85,4 +85,28 @@ async function loginUser(req, res) {
   }
 }
 
-export { registerUser, loginUser };
+async function getCurrentUser(req, res) {
+  try {
+    const userId = req.user.userId;
+    
+    const existUser = await User.findById(userId);
+
+    if (!existUser) {
+      return res.status(404).json({
+        error: "User Not Found",
+      });
+    }
+    return res.json({
+      id: existUser._id,
+      name: existUser.name,
+      email: existUser.email,
+      role: existUser.role,
+    });
+  } catch (err) {
+    return res.status(500).json({
+        error:"Server error while fetching user"
+    })
+  }
+}
+
+export { registerUser, loginUser, getCurrentUser };
