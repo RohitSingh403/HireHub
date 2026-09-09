@@ -112,7 +112,7 @@ async function updateJob(req, res) {
   }
 
   const updateJobData = {};
-  
+
   if (req.body.title !== undefined) {
     updateJobData.title = req.body.title;
   }
@@ -155,8 +155,8 @@ async function updateJob(req, res) {
 
   if (Object.keys(updateJobData).length === 0) {
     return res.status(400).json({
-        msg: "At least one field is required for update",
-    })
+      msg: "At least one field is required for update",
+    });
   }
 
   const patchJob = await Job.findByIdAndUpdate(getJobId, updateJobData, {
@@ -170,4 +170,25 @@ async function updateJob(req, res) {
   });
 }
 
-export { createJob, getJobs, getJobById, updateJob };
+async function deleteJob(req, res) {
+  const getJobId = req.params.id;
+  const findJobFromDb = await Job.findById(getJobId);
+  if (!findJobFromDb) {
+    return res.status(404).json({
+      msg: "Job not found",
+    });
+  }
+  if (findJobFromDb.createdBy.toString() !== req.user.userId) {
+    return res.status(403).json({
+      msg: "Access forbidden",
+    });
+  }
+
+  await Job.findByIdAndDelete(getJobId);
+
+  return res.status(200).json({
+    msg: "Job deleted successfully",
+  });
+}
+
+export { createJob, getJobs, getJobById, updateJob, deleteJob };
