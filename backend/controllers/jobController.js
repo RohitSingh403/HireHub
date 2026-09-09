@@ -94,4 +94,80 @@ async function getJobById(req, res) {
   });
 }
 
-export { createJob, getJobs, getJobById };
+async function updateJob(req, res) {
+  const getJobId = req.params.id;
+
+  const getJobFromDb = await Job.findById(getJobId);
+
+  if (!getJobFromDb) {
+    return res.status(404).json({
+      msg: "Job not found",
+    });
+  }
+
+  if (getJobFromDb.createdBy.toString() !== req.user.userId) {
+    return res.status(403).json({
+      msg: "Access forbidden",
+    });
+  }
+
+  const updateJobData = {};
+  
+  if (req.body.title !== undefined) {
+    updateJobData.title = req.body.title;
+  }
+
+  if (req.body.description !== undefined) {
+    updateJobData.description = req.body.description;
+  }
+
+  if (req.body.location !== undefined) {
+    updateJobData.location = req.body.location;
+  }
+
+  if (req.body.employmentType !== undefined) {
+    updateJobData.employmentType = req.body.employmentType;
+  }
+
+  if (req.body.workMode !== undefined) {
+    updateJobData.workMode = req.body.workMode;
+  }
+
+  if (req.body.salaryMin !== undefined) {
+    updateJobData.salaryMin = req.body.salaryMin;
+  }
+
+  if (req.body.salaryMax !== undefined) {
+    updateJobData.salaryMax = req.body.salaryMax;
+  }
+
+  if (req.body.skills !== undefined) {
+    updateJobData.skills = req.body.skills;
+  }
+
+  if (req.body.experience !== undefined) {
+    updateJobData.experience = req.body.experience;
+  }
+
+  if (req.body.status !== undefined) {
+    updateJobData.status = req.body.status;
+  }
+
+  if (Object.keys(updateJobData).length === 0) {
+    return res.status(400).json({
+        msg: "At least one field is required for update",
+    })
+  }
+
+  const patchJob = await Job.findByIdAndUpdate(getJobId, updateJobData, {
+    new: true,
+    runValidators: true,
+  });
+
+  return res.status(200).json({
+    msg: "Job Updated Successfully",
+    job: patchJob,
+  });
+}
+
+export { createJob, getJobs, getJobById, updateJob };
