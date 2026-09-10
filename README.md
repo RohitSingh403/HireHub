@@ -1,130 +1,94 @@
 # HireHub
 
-> A full-stack job portal designed to connect job seekers with employers through a modern, secure, and scalable web application.
+> A full-stack job portal designed to connect job seekers and recruiters through a secure, role-based web application.
 
-HireHub is a full-stack web application that provides a platform where users can discover job opportunities, create professional profiles, apply for jobs, and manage their applications.
+HireHub is a full-stack job portal built with React, Node.js, Express.js, and MongoDB.
 
-The platform is being developed with a modular backend architecture and a modern React-based frontend.
+The project is being developed incrementally with a focus on clean backend architecture, authentication, authorization, resource ownership, RESTful API design, and real-world application workflows.
 
 ---
 
 ## 🚀 Project Status
 
-**Currently in development**  
+**Currently in active development**
 
-The project is being developed incrementally, starting with the backend architecture and database integration, followed by authentication, job management, applications, and the frontend.
+The backend foundation and core job/application workflows are implemented and tested.
+
+### Current Progress
+
+- ✅ Backend server setup
+- ✅ MongoDB database integration
+- ✅ Environment configuration
+- ✅ User registration
+- ✅ User login
+- ✅ Password hashing with bcrypt
+- ✅ JWT authentication
+- ✅ Authentication middleware
+- ✅ Role-based authorization
+- ✅ Candidate role
+- ✅ Recruiter role
+- ✅ Admin role defined
+- ✅ Company creation
+- ✅ Company ownership validation
+- ✅ Job creation
+- ✅ Job listing
+- ✅ Job details
+- ✅ Job updating
+- ✅ Job deletion
+- ✅ Recruiter job ownership validation
+- ✅ Candidate job applications
+- ✅ Duplicate application prevention
+- ✅ Candidate application history
+- ✅ Recruiter applicant management
+- ✅ Recruiter job ownership protection
+- 🚧 Application status management
+- 🚧 Advanced job search and filtering
+- 🚧 Candidate profiles
+- 🚧 Recruiter dashboards
+- 🚧 Candidate dashboards
+- 🚧 Frontend implementation
+- 🚧 Production deployment
 
 ---
 
-## 🎯 Objectives
+# 🎯 Project Objectives
 
-The main objectives of HireHub are to:
+HireHub aims to provide a realistic job marketplace where:
 
-- Provide a centralized platform for job seekers and recruiters.
-- Allow candidates to search and apply for jobs.
-- Allow recruiters to create and manage job postings.
-- Provide role-based access for different types of users.
-- Track job applications efficiently.
-- Build a secure and scalable REST API.
-- Provide a responsive and user-friendly interface.
+- Candidates can discover and apply for jobs.
+- Recruiters can create and manage job postings.
+- Recruiters can manage applications submitted to their jobs.
+- Users are protected through JWT authentication.
+- Access is controlled using role-based authorization.
+- Resource ownership is enforced at the backend level.
+- Applications are linked to candidates and jobs.
+- The system follows a modular REST API architecture.
+- The application can be extended into a production-ready platform.
 
 ---
 
-## ✨ Planned Features
+# ✨ Core Features
 
-### 👤 Authentication & Authorization
+## 👤 Authentication & Authorization
 
-- User registration and login
-- Secure password hashing
-- JWT-based authentication
+HireHub uses JWT-based authentication and role-based authorization.
+
+### Implemented
+
+- User registration
+- User login
+- Password hashing using bcrypt
+- JWT token generation
+- JWT authentication middleware
+- Protected API routes
 - Role-based authorization
-- Candidate and recruiter roles
-- Protected routes
+- Candidate authorization
+- Recruiter authorization
+- Authenticated user information endpoint
 
-### 🔎 Job Search & Discovery
-
-- Browse available jobs
-- Search jobs by keywords
-- Filter jobs by:
-  - Location
-  - Job type
-  - Experience
-  - Salary
-  - Skills
-- View detailed job information
-
-### 💼 Job Management
-
-Recruiters will be able to:
-
-- Create job postings
-- Update job postings
-- Delete job postings
-- Manage active job listings
-- View applications for their jobs
-
-### 📄 Applications
-
-Candidates will be able to:
-
-- Apply for jobs
-- Track submitted applications
-- View application status
-- Manage their applications
-
-Recruiters will be able to:
-
-- View applicants
-- Review applications
-- Update application status
-
-### 👨‍💼 User Profiles
-
-Candidates will be able to manage:
-
-- Personal information
-- Skills
-- Education
-- Experience
-- Resume
-- Profile information
-
-### 📊 Dashboards
-
-Separate dashboards for:
-
-**Candidates**  
-- Applied jobs 
-- Application status
-- Profile management
-
-**Recruiters**  
-- Posted jobs 
-- Applicants
-- Application management
-- Job statistics
-
----
-
-# 🏗️ Architecture
-
-HireHub follows a client-server architecture.
+### Supported Roles
 
 ```text
-                    HireHub
-                       │
-          ┌────────────┴────────────────────┐
-          │                                 │
-      Frontend                           Backend
-          │                                 │
-       React                            Express.js
-          │                                 │
-       Vite                              Routes
-          │                                 │
-       API Calls                        Controllers
-          │                                 │
-          │                             Mongoose
-          │                                 │
-          │                              MongoDB
-          │
-          └──────── HTTP / REST API ────────┘
+candidate
+recruiter
+admin
