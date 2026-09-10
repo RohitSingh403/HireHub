@@ -50,4 +50,31 @@ async function getMyApplications(req, res) {
   });
 }
 
-export { applyForJob, getMyApplications };
+async function getJobApplications(req, res) {
+  const jobId = req.params.jobId;
+  const userId = req.user.userId;
+
+  const jobExist = await Job.findById(jobId);
+  if (!jobExist) {
+    return res.status(404).json({
+      msg: "Job not found",
+    });
+  }
+
+  if (jobExist.createdBy.toString() !== userId) {
+    return res.status(403).json({
+      msg: "Access forbidden",
+    });
+  }
+
+  const applications = await Application.find({
+    job: jobId,
+  });
+
+  return res.status(200).json({
+    msg: "Job applications successfully found",
+    applications: applications,
+  });
+}
+
+export { applyForJob, getMyApplications, getJobApplications };
