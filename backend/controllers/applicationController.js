@@ -45,8 +45,8 @@ async function getMyApplications(req, res) {
     candidate: userId,
   });
   return res.status(200).json({
-    msg: "Job successfully found",
-    allJobs: findApplication,
+    msg: "Application successfully found",
+    applications: findApplication,
   });
 }
 
