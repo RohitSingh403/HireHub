@@ -39,4 +39,15 @@ async function applyForJob(req, res) {
   });
 }
 
-export default applyForJob;
+async function getMyApplications(req, res) {
+  const userId = req.user.userId;
+  const findApplication = await Application.find({
+    candidate: userId,
+  });
+  return res.status(200).json({
+    msg: "Job successfully found",
+    allJobs: findApplication,
+  });
+}
+
+export { applyForJob, getMyApplications };
