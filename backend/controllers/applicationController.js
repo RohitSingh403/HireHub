@@ -77,4 +77,59 @@ async function getJobApplications(req, res) {
   });
 }
 
-export { applyForJob, getMyApplications, getJobApplications };
+async function updateApplicationStatus(req, res) {
+  const applicationId = req.params.id;
+  const recruiterId = req.user.userId;
+
+  const applicationExist = await Application.findById(applicationId);
+
+  if (!applicationExist) {
+    return res.status(404).json({
+      msg: " Application not found",
+    });
+  }
+
+  const jobExist = await Job.findById(applicationExist.job);
+
+  if (!jobExist) {
+    return res.status(404).json({
+      msg: "Job not found",
+    });
+  }
+
+  if (jobExist.createdBy.toString() !== recruiterId) {
+    return res.status(403).json({
+      msg: "Access denied",
+    });
+  }
+
+  const { status } = req.body;
+
+  const allowedStatus = ["applied", "shortlisted", "rejected", "hired"];
+
+  if (!allowedStatus.includes(status)) {
+    return res.status(400).json({
+      msg: "Please input a valid status",
+    });
+  }
+
+  await Application.updateOne(
+    {
+      _id: applicationId,
+    },
+    {
+      status: status,
+    },
+  );
+
+  return res.status(200).json({
+    msg: "Application status updated successfully",
+  });
+}
+
+export {
+  applyForJob,
+  getMyApplications,
+  getJobApplications,
+  updateApplicationStatus,
+};
