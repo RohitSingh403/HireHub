@@ -47,4 +47,21 @@ async function createCompany(req, res) {
   }
 }
 
-export default createCompany;
+async function getCompanyById(req, res) {
+  const companyId = req.params.id;
+
+  const existCompany = await Company.findById(companyId);
+
+  if (!existCompany) {
+    return res.status(404).json({
+      msg: "Company not found",
+    });
+  }
+
+  return res.status(200).json({
+    msg: "Company found successfully",
+    company: existCompany,
+  });
+}
+
+export { createCompany, getCompanyById };
