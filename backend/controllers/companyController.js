@@ -1,6 +1,6 @@
 import Company from "../models/Company.js";
 
-async function createCompany(req, res) {
+async function createCompany(req, res, next) {
   try {
     const {
       name,
@@ -41,9 +41,7 @@ async function createCompany(req, res) {
       company: newCompany,
     });
   } catch (err) {
-    return res.status(500).json({
-      msg: "Internal server error",
-    });
+    next(err);
   }
 }
 
