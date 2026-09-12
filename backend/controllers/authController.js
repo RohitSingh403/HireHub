@@ -2,7 +2,7 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
-async function registerUser(req, res) {
+async function registerUser(req, res, next) {
   try {
     const { name, email, password, role } = req.body;
 
@@ -34,13 +34,11 @@ async function registerUser(req, res) {
       userId: newUser._id,
     });
   } catch (err) {
-    return res.status(500).json({
-      msg: "Server error during registration",
-    });
+    next(err);
   }
 }
 
-async function loginUser(req, res) {
+async function loginUser(req, res, next) {
   try {
     const { email, password } = req.body;
 
@@ -79,16 +77,14 @@ async function loginUser(req, res) {
       },
     });
   } catch (err) {
-    return res.status(500).json({
-      msg: "Server error login failed",
-    });
+    next(err);
   }
 }
 
-async function getCurrentUser(req, res) {
+async function getCurrentUser(req, res, next) {
   try {
     const userId = req.user.userId;
-    
+
     const existUser = await User.findById(userId);
 
     if (!existUser) {
@@ -103,9 +99,7 @@ async function getCurrentUser(req, res) {
       role: existUser.role,
     });
   } catch (err) {
-    return res.status(500).json({
-        error:"Server error while fetching user"
-    })
+    next(err);
   }
 }
 
