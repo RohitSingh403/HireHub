@@ -6,6 +6,12 @@ async function registerUser(req, res, next) {
   try {
     const { name, email, password, role } = req.body;
 
+    if (role !== "candidate" && role !== "recruiter") {
+      return res.status(400).json({
+        msg: "Invalid role",
+      });
+    }
+
     if (!email || !password) {
       return res.status(400).json({
         msg: "Email and password are required",
