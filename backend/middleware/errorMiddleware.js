@@ -26,6 +26,12 @@ function errorMiddleware(err, req, res, next) {
     });
   }
 
+  if (err instanceof SyntaxError && err.status === 400 && "body" in err) {
+    return res.status(400).json({
+      msg: "Invalid JSON",
+    });
+  }
+
   return res.status(500).json({
     msg: "Internal server error",
   });
