@@ -1,94 +1,60 @@
-# HireHub
+# 💼 HireHub
 
-> A full-stack job portal designed to connect job seekers and recruiters through a secure, role-based web application.
+> A modern full-stack job portal that connects candidates and recruiters through a secure, role-based recruitment platform.
 
-HireHub is a full-stack job portal built with React, Node.js, Express.js, and MongoDB.
+HireHub is a production-oriented full-stack web application designed to simulate a real-world recruitment ecosystem.
 
-The project is being developed incrementally with a focus on clean backend architecture, authentication, authorization, resource ownership, RESTful API design, and real-world application workflows.
-
----
-
-## 🚀 Project Status
-
-**Currently in active development**
-
-The backend foundation and core job/application workflows are implemented and tested.
-
-### Current Progress
-
-- ✅ Backend server setup
-- ✅ MongoDB database integration
-- ✅ Environment configuration
-- ✅ User registration
-- ✅ User login
-- ✅ Password hashing with bcrypt
-- ✅ JWT authentication
-- ✅ Authentication middleware
-- ✅ Role-based authorization
-- ✅ Candidate role
-- ✅ Recruiter role
-- ✅ Admin role defined
-- ✅ Company creation
-- ✅ Company ownership validation
-- ✅ Job creation
-- ✅ Job listing
-- ✅ Job details
-- ✅ Job updating
-- ✅ Job deletion
-- ✅ Recruiter job ownership validation
-- ✅ Candidate job applications
-- ✅ Duplicate application prevention
-- ✅ Candidate application history
-- ✅ Recruiter applicant management
-- ✅ Recruiter job ownership protection
-- 🚧 Application status management
-- 🚧 Advanced job search and filtering
-- 🚧 Candidate profiles
-- 🚧 Recruiter dashboards
-- 🚧 Candidate dashboards
-- 🚧 Frontend implementation
-- 🚧 Production deployment
+The platform provides separate workflows for **Candidates, Recruiters, and Administrators**, with JWT authentication, role-based authorization, ownership validation, job management, company management, and application tracking.
 
 ---
 
-# 🎯 Project Objectives
+## ✨ Features
 
-HireHub aims to provide a realistic job marketplace where:
+### 🔐 Authentication & Security
 
-- Candidates can discover and apply for jobs.
-- Recruiters can create and manage job postings.
-- Recruiters can manage applications submitted to their jobs.
-- Users are protected through JWT authentication.
-- Access is controlled using role-based authorization.
-- Resource ownership is enforced at the backend level.
-- Applications are linked to candidates and jobs.
-- The system follows a modular REST API architecture.
-- The application can be extended into a production-ready platform.
-
----
-
-# ✨ Core Features
-
-## 👤 Authentication & Authorization
-
-HireHub uses JWT-based authentication and role-based authorization.
-
-### Implemented
-
-- User registration
-- User login
-- Password hashing using bcrypt
-- JWT token generation
-- JWT authentication middleware
+- JWT-based authentication
+- Secure password hashing with bcrypt
+- Role-based access control
 - Protected API routes
-- Role-based authorization
-- Candidate authorization
-- Recruiter authorization
-- Authenticated user information endpoint
+- Recruiter ownership validation
+- Candidate-only application access
+- Admin self-registration prevention
+- Centralized error handling
+- Duplicate resource detection
+- MongoDB ObjectId validation
 
-### Supported Roles
+### 👨‍💻 Candidate
+
+- Browse available jobs
+- View individual job details
+- Apply for jobs
+- Prevent duplicate applications
+- View personal applications
+- Track application status
+
+### 🏢 Recruiter
+
+- Create and manage company profiles
+- Create job listings
+- Update job listings
+- Delete job listings
+- View applicants for owned jobs
+- Update application status
+- Manage recruitment workflow
+
+### 📋 Application Management
+
+Supported application statuses:
 
 ```text
-candidate
-recruiter
-admin
+Applied
+   ↓
+Shortlisted
+   ↓
+Hired
+
+or
+
+Applied
+   ↓
+Rejected
