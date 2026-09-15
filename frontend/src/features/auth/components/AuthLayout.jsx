@@ -9,7 +9,7 @@ function AuthLayout({ children }) {
           <AuthBrandPanel></AuthBrandPanel>
           
           <section className="p-8 md:p-12">
-            <RoleSelector></RoleSelector>
+            
             
             {children}
           </section>
