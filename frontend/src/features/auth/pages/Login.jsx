@@ -4,11 +4,13 @@ import AuthLayout from "../components/AuthLayout";
 import RoleSelector from "../components/RoleSelector";
 import { zodResolver } from "@hookform/resolvers/zod";
 import loginSchema from "../schemas/authSchema";
+import login from "../services/authService";
 
 function Login() {
   const [selectedRole, setSelectedRole] = useState("candidate");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
+  const [errorMessage, setErrorMessage] = useState("");
 
   const {
     register,
@@ -18,16 +20,21 @@ function Login() {
     resolver: zodResolver(loginSchema),
   });
 
-  function onSubmit(data) {
-    console.log(data);
+  async function onSubmit(data) {
     const loginData = {
       ...data,
       role: selectedRole,
       rememberMe: rememberMe,
     };
-    console.log(loginData);
-
-    console.log("Form Submitted");
+    setErrorMessage("");
+    try {
+      const response = await login(loginData);
+      console.log(response);
+    } catch (err) {
+      const message = err.response?.data?.msg ?? "Internal server error";
+      console.log(message);
+      setErrorMessage(message);
+    }
   }
 
   function onError(errors) {
@@ -54,6 +61,8 @@ function Login() {
           onSubmit={handleSubmit(onSubmit, onError)}
           className="flex flex-col pt-4"
         >
+          {errorMessage && <p className="text-red-600">{errorMessage}</p>}
+
           <label className="text-2xl text-gray-700 mb-2" htmlFor="email">
             Email
           </label>
@@ -77,7 +86,9 @@ function Login() {
               placeholder="name@company.com"
             />
           </div>
-          <p className="text-red-600">{errors.email?.message}</p>
+          {errors.email && (
+            <p className="text-red-600">{errors.email?.message}</p>
+          )}
           <div className=" flex justify-between mb-2 mt-4.5">
             <label className="text-2xl text-gray-700 " htmlFor="password">
               Password
@@ -122,7 +133,11 @@ function Login() {
               </svg>
             </button>
           </div>
-          <p className="text-red-600">{errors.password?.message}</p>
+
+          {errors.password && (
+            <p className="text-red-600">{errors.password?.message}</p>
+          )}
+
           <div className=" flex items-center mt-5 text-xl ">
             <input
               className="w-5 h-5"

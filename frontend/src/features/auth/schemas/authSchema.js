@@ -11,14 +11,9 @@ const loginSchema = z.object({
         error: "Please enter a valid email address",
       }),
     ),
-  password: z
-    .string()
-    .min(1, {
-      error: "Password is required",
-    })
-    .min(8, {
-      error: "Password must be at least 8 characters",
-    }),
+  password: z.string().min(1, {
+    error: "Password is required",
+  }),
 });
 
 export default loginSchema;
