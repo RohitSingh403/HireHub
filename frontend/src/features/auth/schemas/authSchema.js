@@ -6,9 +6,11 @@ const loginSchema = z.object({
     .min(1, {
       error: "Email is required",
     })
-    .z.email({
-      error: "Please enter a valid email address",
-    }),
+    .pipe(
+      z.email({
+        error: "Please enter a valid email address",
+      }),
+    ),
   password: z
     .string()
     .min(1, {
