@@ -127,7 +127,7 @@ function Login() {
           </button>
         </form>
         <div className="flex items-center justify-center">
-          <hr className="mt-5  w-[25rem] text-gray-300" />
+          <hr className="mt-5  w-100 text-gray-300" />
         </div>
 
         <div className="flex justify-center items-center pt-3 text-[18px] gap-2">
