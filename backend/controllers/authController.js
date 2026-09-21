@@ -46,10 +46,16 @@ async function registerUser(req, res, next) {
 
 async function loginUser(req, res, next) {
   try {
-    const { email, password } = req.body;
+    const { email, password, role } = req.body;
 
     const user = await User.findOne({ email });
     if (!user) {
+      return res.status(401).json({
+        msg: "Invalid email or password",
+      });
+    }
+
+    if (role !== user.role) {
       return res.status(401).json({
         msg: "Invalid email or password",
       });

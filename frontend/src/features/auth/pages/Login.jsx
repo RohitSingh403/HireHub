@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import AuthLayout from "../components/AuthLayout";
 import RoleSelector from "../components/RoleSelector";
@@ -13,6 +13,7 @@ function Login() {
   const [rememberMe, setRememberMe] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
   const loginUser = useAuthStore((state) => state.login);
+  const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
 
   const {
     register,
@@ -34,13 +35,22 @@ function Login() {
 
       console.log(response);
 
-      loginUser(response.token, response.user)
+      loginUser(response.token, response.user);
+
+      // console.log(isAuthenticated)
     } catch (err) {
       const message = err.response?.data?.msg ?? "Internal server error";
       console.log(message);
       setErrorMessage(message);
     }
   }
+
+  useEffect(
+    function () {
+      console.log("Authentication status", isAuthenticated);
+    },
+    [isAuthenticated],
+  );
 
   function onError(errors) {
     console.log(errors);
