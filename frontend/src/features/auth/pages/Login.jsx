@@ -5,12 +5,14 @@ import RoleSelector from "../components/RoleSelector";
 import { zodResolver } from "@hookform/resolvers/zod";
 import loginSchema from "../schemas/authSchema";
 import login from "../services/authService";
+import useAuthStore from "../../../store/authStore";
 
 function Login() {
   const [selectedRole, setSelectedRole] = useState("candidate");
   const [showPassword, setShowPassword] = useState(false);
   const [rememberMe, setRememberMe] = useState(false);
   const [errorMessage, setErrorMessage] = useState("");
+  const loginUser = useAuthStore((state) => state.login);
 
   const {
     register,
@@ -29,8 +31,10 @@ function Login() {
     setErrorMessage("");
     try {
       const response = await login(loginData);
-        
+
       console.log(response);
+
+      loginUser(response.token, response.user)
     } catch (err) {
       const message = err.response?.data?.msg ?? "Internal server error";
       console.log(message);
