@@ -6,6 +6,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import loginSchema from "../schemas/authSchema";
 import login from "../services/authService";
 import useAuthStore from "../../../store/authStore";
+import api from "../../../utils/api";
 
 function Login() {
   const [selectedRole, setSelectedRole] = useState("candidate");
@@ -36,6 +37,11 @@ function Login() {
       console.log(response);
 
       loginUser(response.token, response.user);
+      console.log("Before /me request");
+      const triggerInterceptor = await api.get("/api/auth/me");
+      console.log("After /me request", triggerInterceptor);
+      console.log(triggerInterceptor);
+
 
       // console.log(isAuthenticated)
     } catch (err) {
@@ -127,6 +133,7 @@ function Login() {
             <input
               className="w-full p-2 text-xl"
               {...register("password")}
+              autoComplete="password"
               id="password"
               type={showPassword ? "text" : "password"}
               placeholder="••••••••••••"
