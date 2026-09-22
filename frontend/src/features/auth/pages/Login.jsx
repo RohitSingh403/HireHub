@@ -37,11 +37,11 @@ function Login() {
       console.log(response);
 
       loginUser(response.token, response.user);
-      console.log("Before /me request");
-      const triggerInterceptor = await api.get("/api/auth/me");
-      console.log("After /me request", triggerInterceptor);
-      console.log(triggerInterceptor);
 
+      // const triggerInterceptor =
+      await api.get("/api/auth/me");
+
+      // console.log(triggerInterceptor);
 
       // console.log(isAuthenticated)
     } catch (err) {
