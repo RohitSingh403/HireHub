@@ -1,12 +1,11 @@
 import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
-import AuthLayout from "../components/AuthLayout";
-import RoleSelector from "../components/RoleSelector";
+import AuthLayout from "../components/AuthLayout.jsx";
+import RoleSelector from "../components/RoleSelector.jsx";
 import { zodResolver } from "@hookform/resolvers/zod";
-import loginSchema from "../schemas/authSchema";
-import login from "../services/authService";
-import useAuthStore from "../../../store/authStore";
-import api from "../../../utils/api";
+import loginSchema from "../schemas/authSchema.js";
+import { login } from "../services/authService.js";
+import useAuthStore from "../../../store/authStore.js";
 
 function Login() {
   const [selectedRole, setSelectedRole] = useState("candidate");
@@ -33,17 +32,7 @@ function Login() {
     setErrorMessage("");
     try {
       const response = await login(loginData);
-
-      console.log(response);
-
       loginUser(response.token, response.user);
-
-      // const triggerInterceptor =
-      await api.get("/api/auth/me");
-
-      // console.log(triggerInterceptor);
-
-      // console.log(isAuthenticated)
     } catch (err) {
       const message = err.response?.data?.msg ?? "Internal server error";
       console.log(message);
