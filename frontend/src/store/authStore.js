@@ -15,6 +15,12 @@ const useAuthStore = create(
           isAuthenticated: true,
         });
       },
+      
+      setUser: (user) => {
+        set({
+          user: user,
+        });
+      },
 
       logout: () => {
         set({
