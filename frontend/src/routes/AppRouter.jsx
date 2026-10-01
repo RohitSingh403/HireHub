@@ -2,6 +2,7 @@ import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
 import PublicHome from "../pages/PublicHome.jsx";
 import CandidateHome from "../pages/CandidateHome.jsx";
 import Login from "../features/auth/pages/Login.jsx";
+import AdminLogin from "../features/auth/pages/AdminLogin.jsx";
 import Register from "../features/auth/pages/Register.jsx";
 import JobList from "../features/jobs/pages/JobList.jsx";
 import JobDetail from "../features/jobs/pages/JobDetail.jsx";
@@ -13,8 +14,13 @@ import RecruiterHome from "../features/recruiter/pages/RecruiterHome.jsx";
 import CompanyForm from "../features/recruiter/pages/CompanyForm.jsx";
 import JobForm from "../features/recruiter/pages/JobForm.jsx";
 import Applicants from "../features/recruiter/pages/Applicants.jsx";
+import AdminOverview from "../features/admin/pages/AdminOverview.jsx";
+import AdminUsers from "../features/admin/pages/AdminUsers.jsx";
+import AdminJobs from "../features/admin/pages/AdminJobs.jsx";
+import AdminCompanies from "../features/admin/pages/AdminCompanies.jsx";
 import DashboardLayout from "../layouts/DashboardLayout.jsx";
 import ProtectedRoute from "../components/ProtectedRoute.jsx";
+import AdminRoute from "../components/AdminRoute.jsx";
 import { homePath } from "../utils/homePath.js";
 import useAuthStore, { useAuthHydrated } from "../store/authStore.js";
 
@@ -41,6 +47,7 @@ function AppRouter() {
     <BrowserRouter>
       <Routes>
         <Route path="/login" element={<Login />} />
+        <Route path="/admin/login" element={<AdminLogin />} />
         <Route path="/register" element={<Register />} />
 
         <Route element={<ProtectedRoute role="candidate" />}>
@@ -63,6 +70,15 @@ function AppRouter() {
             <Route path="/recruiter/jobs/new" element={<JobForm />} />
             <Route path="/recruiter/jobs/:id/edit" element={<JobForm />} />
             <Route path="/recruiter/jobs/:id/applicants" element={<Applicants />} />
+          </Route>
+        </Route>
+
+        <Route element={<AdminRoute />}>
+          <Route element={<DashboardLayout />}>
+            <Route path="/admin" element={<AdminOverview />} />
+            <Route path="/admin/users" element={<AdminUsers />} />
+            <Route path="/admin/jobs" element={<AdminJobs />} />
+            <Route path="/admin/companies" element={<AdminCompanies />} />
           </Route>
         </Route>
 
