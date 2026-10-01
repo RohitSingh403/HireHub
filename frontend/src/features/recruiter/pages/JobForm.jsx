@@ -100,6 +100,10 @@ function JobForm() {
       setErrorMessage("Add at least one skill.");
       return;
     }
+    if (String(data.salaryMin).trim() === "" || String(data.salaryMax).trim() === "") {
+      setErrorMessage("Enter a minimum and a maximum salary.");
+      return;
+    }
     if (Number.isNaN(salaryMin) || salaryMin < 0) {
       setErrorMessage("Minimum salary must be zero or more.");
       return;

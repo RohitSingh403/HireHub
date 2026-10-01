@@ -125,6 +125,38 @@ describe("HireHub ownership", () => {
     assertStatus(rejected, 401);
   });
 
+  it("treats email case as the same account", async () => {
+    const registered = await request(app).post("/api/auth/register").send({
+      name: "Case User",
+      email: "Case.User@HireHub.test",
+      password: "password123",
+      role: "candidate",
+    });
+    assertStatus(registered, 201);
+
+    const loggedIn = await request(app).post("/api/auth/login").send({
+      email: "case.user@hirehub.test",
+      password: "password123",
+      role: "candidate",
+    });
+    assertStatus(loggedIn, 200);
+    assert.equal(loggedIn.body.user.email, "case.user@hirehub.test");
+
+    const duplicate = await request(app).post("/api/auth/register").send({
+      name: "Case User",
+      email: "CASE.USER@hirehub.test",
+      password: "password123",
+      role: "recruiter",
+    });
+    assertStatus(duplicate, 409);
+
+    const missingPassword = await request(app).post("/api/auth/login").send({
+      email: "case.user@hirehub.test",
+      role: "candidate",
+    });
+    assertStatus(missingPassword, 401);
+  });
+
   it("returns only open jobs unless the creating recruiter asks by id", async () => {
     const ownerToken = await registerAndLogin({
       name: "Owner Recruiter",
@@ -318,6 +350,27 @@ describe("HireHub ownership", () => {
       .send({ title: "Owned Role Updated" });
     assertStatus(ownerUpdate, 200);
     assert.equal(ownerUpdate.body.job.title, "Owned Role Updated");
+
+    const salaryUpdate = await request(app)
+      .patch(`/api/jobs/${jobId}`)
+      .set(auth(ownerToken))
+      .send({ salaryMin: 70000, salaryMax: 95000 });
+    assertStatus(salaryUpdate, 200);
+    assert.equal(salaryUpdate.body.job.salaryMin, 70000);
+    assert.equal(salaryUpdate.body.job.salaryMax, 95000);
+
+    const salaryMaxOnly = await request(app)
+      .patch(`/api/jobs/${jobId}`)
+      .set(auth(ownerToken))
+      .send({ salaryMax: 110000 });
+    assertStatus(salaryMaxOnly, 200);
+    assert.equal(salaryMaxOnly.body.job.salaryMax, 110000);
+
+    const invertedSalary = await request(app)
+      .patch(`/api/jobs/${jobId}`)
+      .set(auth(ownerToken))
+      .send({ salaryMax: 1000 });
+    assertStatus(invertedSalary, 400);
 
     const applyWithoutToken = await request(app).post(`/api/jobs/${jobId}/apply`);
     assertStatus(applyWithoutToken, 401);

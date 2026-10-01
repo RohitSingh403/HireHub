@@ -2,13 +2,38 @@ import bcrypt from "bcrypt";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
+function normalizeEmail(value) {
+  return String(value ?? "").trim().toLowerCase();
+}
+
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function emailQuery(email) {
+  return {
+    email: {
+      $regex: `^${escapeRegex(email)}$`,
+      $options: "i",
+    },
+  };
+}
+
 async function registerUser(req, res, next) {
   try {
-    const { name, email, password, role } = req.body;
+    const { password, role } = req.body;
+    const name = String(req.body.name ?? "").trim();
+    const email = normalizeEmail(req.body.email);
 
     if (role !== "candidate" && role !== "recruiter") {
       return res.status(400).json({
         msg: "Invalid role",
+      });
+    }
+
+    if (!name) {
+      return res.status(400).json({
+        msg: "Name is required",
       });
     }
 
@@ -18,7 +43,7 @@ async function registerUser(req, res, next) {
       });
     }
 
-    const existingUser = await User.findOne({ email });
+    const existingUser = await User.findOne(emailQuery(email));
 
     if (existingUser) {
       return res.status(409).json({
@@ -46,9 +71,16 @@ async function registerUser(req, res, next) {
 
 async function loginUser(req, res, next) {
   try {
-    const { email, password, role } = req.body;
+    const email = normalizeEmail(req.body.email);
+    const { password, role } = req.body;
 
-    const user = await User.findOne({ email }).select("+password");
+    if (!email || typeof password !== "string" || password.length === 0) {
+      return res.status(401).json({
+        msg: "Invalid email or password",
+      });
+    }
+
+    const user = await User.findOne(emailQuery(email)).select("+password");
     if (!user) {
       return res.status(401).json({
         msg: "Invalid email or password",

@@ -41,8 +41,23 @@ const jobSchema = new mongoose.Schema(
       type: Number,
       required: [true, "Maximum salary is required"],
       validate: {
-        validator: function (value) {
-          return value >= this.salaryMin;
+        validator: async function (value) {
+          let minimum = this.salaryMin;
+          if (typeof this.getUpdate === "function") {
+            const updatedMinimum = this.get("salaryMin");
+            if (updatedMinimum !== undefined) {
+              minimum = updatedMinimum;
+            } else {
+              const existing = await this.model
+                .findOne(this.getQuery())
+                .select("salaryMin");
+              minimum = existing ? existing.salaryMin : undefined;
+            }
+          }
+          if (minimum === undefined || minimum === null) {
+            return false;
+          }
+          return Number(value) >= Number(minimum);
         },
         message:
           "Maximum salary must be greater than or equal to minimum salary",
