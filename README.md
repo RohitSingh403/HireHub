@@ -24,8 +24,8 @@ A recruiter owns a company. A company has jobs. A job receives applications from
 
 | Role | What they can do |
 | --- | --- |
-| Candidate | Register, log in, list open jobs, open one, apply once, read their applications |
-| Recruiter | Register, log in, create and update their company, create and edit their jobs, list applicants, set application status |
+| Candidate | Register, log in, list open jobs, open one, apply once, read their applications, edit a profile, and read a ranked recommendation |
+| Recruiter | Register, log in, create and update their company, create and edit their jobs, rank applicants, set application status |
 | Admin | A valid role on the user model. Public registration rejects it. There is no admin UI. |
 
 Login sends the account back to the matching home: candidates land on the open-job list, recruiters land on their hiring desk.
@@ -39,6 +39,25 @@ A Mongoose `ref` does not prove the related document exists. Job create loads th
 The same rule applies when editing a job or reading its applicants: the job’s `createdBy` must match the token. Another recruiter gets 403. A missing id gets 404.
 
 One candidate cannot apply twice to the same job. `Application` has a unique index on `{ candidate, job }`, and the apply controller rejects a second insert with 409.
+
+## Explainable matching
+
+The match is deterministic. There is no model call. A candidate profile stores skills, years of experience, preferred role, location, work mode, and a salary range. Preferred role is saved so the profile is complete. It is not a signal.
+
+Four signals, fixed weights:
+
+| Signal | Weight | Rule |
+| --- | --- | --- |
+| Skills | 50 | Matched required skills divided by required skills, times 100. Extra profile skills do not raise the score. The response lists matched and missing skills. |
+| Experience | 20 | 100 when the candidate's years meet or exceed the job's minimum years. Otherwise candidate years divided by the minimum, times 100. |
+| Location | 15 | 100 when the job is remote, or the cities match. Otherwise 0. Wanting remote while the job is onsite is 0, even in the same city. |
+| Salary | 15 | 100 when the candidate range and the job range overlap. Otherwise 0. |
+
+The overall percent is that weighted sum, rounded to the nearest integer. A job with no skills is omitted from `GET /api/jobs/recommended`. The list is open jobs only, highest overall first.
+
+The same function ranks applicants on `GET /api/jobs/:jobId/applications`. Ownership is checked first: another recruiter is 403 and never receives a score. The creating recruiter gets each applicant's percent and the same breakdown.
+
+A profile with React and CSS, 1 year, Bengaluru, hybrid, and 70,000–110,000 against a hybrid Bengaluru role that requires React and Node.js, 2 years, and 80,000–120,000 scores 65. Skills are 50, experience is 50, location and salary are 100. Node.js is the missing skill.
 
 ## Job reads
 
@@ -79,7 +98,7 @@ npm test
 npm run dev
 ```
 
-`npm test` starts an in-memory MongoDB. It does not use your `.env`. The suite checks: no token 401, wrong role 403, missing resource 404, another recruiter 403, owner success, and a second apply rejected. It also checks open-job reads, JWT expiry, and that the password hash is hidden.
+`npm test` starts an in-memory MongoDB. It does not use your `.env`. The suite checks: no token 401, wrong role 403, missing resource 404, another recruiter 403, owner success, and a second apply rejected. It also checks open-job reads, JWT expiry, that the password hash is hidden, a known match score, a skill gap, a salary miss, and that a recruiter cannot rank another recruiter's applicants.
 
 ```bash
 cd frontend
@@ -91,9 +110,9 @@ Open the Vite URL. The dev server proxies `/api` to `http://localhost:5001`. For
 
 ### Click-through
 
-1. Register as a recruiter. Create a company. Post a job and leave it open.
-2. Log out. Register as a candidate. You land on the open-job list. Filter it, open the job, apply, then apply again and read the API error. Open My applications.
-3. Log in as the recruiter. Open applicants and change the status.
+1. Register as a recruiter. Create a company. Post a job, including minimum years, and leave it open.
+2. Log out. Register as a candidate. You land on the open-job list. Save a profile, open Recommended, and read the percent plus the matched and missing skills. Filter the open list, apply, then apply again and read the API error. Open My applications.
+3. Log in as the recruiter. Open applicants, read the same breakdown, and change the status.
 
 ## API
 
@@ -102,18 +121,20 @@ Open the Vite URL. The dev server proxies `/api` to `http://localhost:5001`. For
 | POST | `/api/auth/register` | Public. `candidate` or `recruiter` only |
 | POST | `/api/auth/login` | Public. Returns a JWT |
 | GET | `/api/auth/me` | Any logged-in user |
+| PATCH | `/api/auth/me` | Candidate profile. Does not change role |
 | POST | `/api/companies` | Recruiter. `owner` comes from the token |
 | GET | `/api/companies/me` | Recruiter. Their latest company, or 404 |
 | PATCH | `/api/companies/:id` | Owning recruiter |
 | GET | `/api/jobs` | Public, open jobs only. Optional filters |
 | GET | `/api/jobs/mine` | Recruiter. Includes draft and closed |
+| GET | `/api/jobs/recommended` | Candidate. Open jobs with a score breakdown, highest first. Jobs with no skills are omitted |
 | GET | `/api/jobs/:id` | Public if open. Creator if draft or closed |
 | POST | `/api/jobs` | Recruiter who owns the company |
 | PATCH | `/api/jobs/:id` | Creating recruiter |
 | DELETE | `/api/jobs/:id` | Creating recruiter |
 | POST | `/api/jobs/:jobId/apply` | Candidate, once, and only if the job is open |
 | GET | `/api/applications/me` | Candidate |
-| GET | `/api/jobs/:jobId/applications` | Creating recruiter |
+| GET | `/api/jobs/:jobId/applications` | Creating recruiter. Applicants ranked by the same match |
 | PATCH | `/api/applications/:id/status` | Creating recruiter. `applied`, `shortlisted`, `rejected`, `hired` |
 
 ## Out of scope

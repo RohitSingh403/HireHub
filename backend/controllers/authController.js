@@ -93,6 +93,22 @@ async function loginUser(req, res, next) {
   }
 }
 
+function publicUser(user) {
+  return {
+    id: user._id,
+    name: user.name,
+    email: user.email,
+    role: user.role,
+    skills: user.skills || [],
+    yearsOfExperience: user.yearsOfExperience ?? 0,
+    preferredRole: user.preferredRole || "",
+    location: user.location || "",
+    workMode: user.workMode || "",
+    salaryMin: user.salaryMin ?? null,
+    salaryMax: user.salaryMax ?? null,
+  };
+}
+
 async function getCurrentUser(req, res, next) {
   try {
     const userId = req.user.userId;
@@ -104,15 +120,85 @@ async function getCurrentUser(req, res, next) {
         error: "User Not Found",
       });
     }
-    return res.json({
-      id: existUser._id,
-      name: existUser.name,
-      email: existUser.email,
-      role: existUser.role,
+    return res.json(publicUser(existUser));
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function updateProfile(req, res, next) {
+  try {
+    const skills = Array.isArray(req.body.skills)
+      ? req.body.skills.map((skill) => String(skill).trim()).filter(Boolean)
+      : [];
+    const years = Number(req.body.yearsOfExperience);
+    const salaryMin = Number(req.body.salaryMin);
+    const salaryMax = Number(req.body.salaryMax);
+    const workModes = ["remote", "hybrid", "onsite"];
+    const location = String(req.body.location ?? "").trim();
+    const preferredRole = String(req.body.preferredRole ?? "").trim();
+
+    if (skills.length === 0) {
+      return res.status(400).json({
+        msg: "Add at least one skill",
+      });
+    }
+    if (!Number.isFinite(years) || years < 0) {
+      return res.status(400).json({
+        msg: "Years of experience cannot be negative",
+      });
+    }
+    if (!workModes.includes(req.body.workMode)) {
+      return res.status(400).json({
+        msg: "Invalid work mode",
+      });
+    }
+    if (!location) {
+      return res.status(400).json({
+        msg: "Location is required",
+      });
+    }
+    if (
+      !Number.isFinite(salaryMin) ||
+      salaryMin < 0 ||
+      !Number.isFinite(salaryMax) ||
+      salaryMax < salaryMin
+    ) {
+      return res.status(400).json({
+        msg: "Salary range is invalid",
+      });
+    }
+
+    const updated = await User.findByIdAndUpdate(
+      req.user.userId,
+      {
+        skills,
+        yearsOfExperience: years,
+        preferredRole,
+        location,
+        workMode: req.body.workMode,
+        salaryMin,
+        salaryMax,
+      },
+      {
+        returnDocument: "after",
+        runValidators: true,
+      },
+    );
+
+    if (!updated) {
+      return res.status(404).json({
+        error: "User Not Found",
+      });
+    }
+
+    return res.status(200).json({
+      msg: "Profile updated",
+      user: publicUser(updated),
     });
   } catch (err) {
     next(err);
   }
 }
 
-export { registerUser, loginUser, getCurrentUser };
+export { registerUser, loginUser, getCurrentUser, updateProfile };

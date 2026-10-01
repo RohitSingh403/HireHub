@@ -3,6 +3,8 @@ import Login from "../features/auth/pages/Login.jsx";
 import Register from "../features/auth/pages/Register.jsx";
 import JobList from "../features/jobs/pages/JobList.jsx";
 import JobDetail from "../features/jobs/pages/JobDetail.jsx";
+import RecommendedJobs from "../features/jobs/pages/RecommendedJobs.jsx";
+import ProfileForm from "../features/profile/pages/ProfileForm.jsx";
 import MyApplications from "../features/applications/pages/MyApplications.jsx";
 import RecruiterHome from "../features/recruiter/pages/RecruiterHome.jsx";
 import CompanyForm from "../features/recruiter/pages/CompanyForm.jsx";
@@ -42,6 +44,8 @@ function AppRouter() {
           <Route element={<DashboardLayout />}>
             <Route path="/jobs" element={<JobList />} />
             <Route path="/jobs/:id" element={<JobDetail />} />
+            <Route path="/recommended" element={<RecommendedJobs />} />
+            <Route path="/profile" element={<ProfileForm />} />
             <Route path="/applications" element={<MyApplications />} />
           </Route>
         </Route>

@@ -63,6 +63,11 @@ const jobSchema = new mongoose.Schema(
       required: [true, "Experience level is required"],
       trim: true,
     },
+    experienceMin: {
+      type: Number,
+      min: [0, "Experience minimum cannot be negative"],
+      default: 0,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",

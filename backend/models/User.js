@@ -20,6 +20,37 @@ const userSchema = new mongoose.Schema(
       required: true,
       enum: ["candidate", "recruiter", "admin"],
     },
+    skills: {
+      type: [String],
+      default: [],
+    },
+    yearsOfExperience: {
+      type: Number,
+      min: [0, "Years of experience cannot be negative"],
+      default: 0,
+    },
+    preferredRole: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    location: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    workMode: {
+      type: String,
+      enum: ["remote", "hybrid", "onsite"],
+    },
+    salaryMin: {
+      type: Number,
+      min: [0, "Salary cannot be negative"],
+    },
+    salaryMax: {
+      type: Number,
+      min: [0, "Salary cannot be negative"],
+    },
   },
   {
     timestamps: true,

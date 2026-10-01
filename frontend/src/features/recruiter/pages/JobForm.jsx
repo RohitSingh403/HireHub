@@ -23,6 +23,7 @@ const emptyValues = {
   salaryMax: "",
   skills: "",
   experience: "",
+  experienceMin: "0",
   status: "open",
 };
 
@@ -60,6 +61,7 @@ function JobForm() {
             salaryMax: String(job.salaryMax),
             skills: (job.skills || []).join(", "),
             experience: job.experience,
+            experienceMin: String(job.experienceMin ?? 0),
             status: job.status,
           });
         }
@@ -83,6 +85,7 @@ function JobForm() {
     setErrorMessage("");
     const salaryMin = Number(data.salaryMin);
     const salaryMax = Number(data.salaryMax);
+    const experienceMin = data.experienceMin === "" ? 0 : Number(data.experienceMin);
     const skills = data.skills
       .split(",")
       .map((skill) => skill.trim())
@@ -104,6 +107,10 @@ function JobForm() {
       setErrorMessage("Maximum salary must be at least the minimum.");
       return;
     }
+    if (!Number.isFinite(experienceMin) || experienceMin < 0) {
+      setErrorMessage("Minimum years cannot be negative.");
+      return;
+    }
     if (!company?._id) {
       setErrorMessage("Create a company before posting a job.");
       return;
@@ -119,6 +126,7 @@ function JobForm() {
       salaryMax,
       skills,
       experience: data.experience.trim(),
+      experienceMin,
       status: data.status,
     };
 
@@ -179,6 +187,15 @@ function JobForm() {
           </Field>
           <Field label="Experience" htmlFor="experience">
             <input id="experience" className={inputClass} {...register("experience")} placeholder="2+ years" />
+          </Field>
+          <Field label="Minimum years" htmlFor="experienceMin">
+            <input
+              id="experienceMin"
+              type="number"
+              min="0"
+              className={inputClass}
+              {...register("experienceMin")}
+            />
           </Field>
           <Field label="Employment type" htmlFor="employmentType">
             <select id="employmentType" className={inputClass} {...register("employmentType")}>

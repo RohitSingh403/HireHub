@@ -1,5 +1,6 @@
 import Job from "../models/Job.js";
 import Application from "../models/Application.js";
+import { scoreMatch } from "../services/match.js";
 
 async function applyForJob(req, res, next) {
   try {
@@ -85,13 +86,33 @@ async function getJobApplications(req, res, next) {
 
     const applications = await Application.find({
       job: jobId,
-    })
-      .populate("candidate", "name email")
-      .sort({ createdAt: -1 });
+    }).populate(
+      "candidate",
+      "name email skills yearsOfExperience preferredRole location workMode salaryMin salaryMax",
+    );
+
+    const ranked = applications
+      .map((application) => {
+        const plain = application.toObject();
+        return {
+          ...plain,
+          match: scoreMatch(plain.candidate, jobExist),
+        };
+      })
+      .sort((left, right) => {
+        const leftScore = left.match?.overall ?? -1;
+        const rightScore = right.match?.overall ?? -1;
+        if (rightScore !== leftScore) {
+          return rightScore - leftScore;
+        }
+        return String(left.candidate?.name ?? "").localeCompare(
+          String(right.candidate?.name ?? ""),
+        );
+      });
 
     return res.status(200).json({
       msg: "Job applications successfully found",
-      applications: applications,
+      applications: ranked,
     });
   } catch (err) {
     next(err);

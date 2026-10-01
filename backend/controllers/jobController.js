@@ -1,5 +1,7 @@
 import Company from "../models/Company.js";
 import Job from "../models/Job.js";
+import User from "../models/User.js";
+import { scoreMatch } from "../services/match.js";
 
 const EMPLOYMENT_TYPES = ["full-time", "part-time", "contract", "internship"];
 const WORK_MODES = ["remote", "hybrid", "onsite"];
@@ -15,6 +17,17 @@ function queryValue(value) {
     return "";
   }
   return String(raw).trim();
+}
+
+function parsedExperienceMin(value) {
+  if (value === undefined || value === null || value === "") {
+    return undefined;
+  }
+  const number = Number(value);
+  if (!Number.isFinite(number) || number < 0) {
+    return null;
+  }
+  return number;
 }
 
 function isJobOwner(job, user) {
@@ -80,6 +93,17 @@ async function createJob(req, res, next) {
       });
     }
 
+    if (
+      req.body.experienceMin !== undefined &&
+      req.body.experienceMin !== "" &&
+      parsedExperienceMin(req.body.experienceMin) === null
+    ) {
+      return res.status(400).json({
+        msg: "Minimum years cannot be negative",
+      });
+    }
+
+    const experienceMin = parsedExperienceMin(req.body.experienceMin);
     const newJob = await Job.create({
       title,
       description,
@@ -92,6 +116,9 @@ async function createJob(req, res, next) {
       skills,
       experience,
       createdBy: req.user.userId,
+      ...(experienceMin === undefined || experienceMin === null
+        ? {}
+        : { experienceMin }),
       ...(JOB_STATUSES.includes(req.body.status) ? { status: req.body.status } : {}),
     });
 
@@ -256,6 +283,19 @@ async function updateJob(req, res, next) {
       updateJobData.experience = req.body.experience;
     }
 
+    if (
+      req.body.experienceMin !== undefined &&
+      req.body.experienceMin !== ""
+    ) {
+      const experienceMin = parsedExperienceMin(req.body.experienceMin);
+      if (experienceMin === null) {
+        return res.status(400).json({
+          msg: "Minimum years cannot be negative",
+        });
+      }
+      updateJobData.experienceMin = experienceMin;
+    }
+
     if (req.body.status !== undefined) {
       updateJobData.status = req.body.status;
     }
@@ -305,4 +345,50 @@ async function deleteJob(req, res, next) {
   }
 }
 
-export { createJob, getJobs, getMyJobs, getJobById, updateJob, deleteJob };
+async function getRecommendedJobs(req, res, next) {
+  try {
+    const profile = await User.findById(req.user.userId);
+    if (!profile) {
+      return res.status(404).json({
+        error: "User Not Found",
+      });
+    }
+
+    const openJobs = await Job.find({ status: "open" })
+      .populate("company", "name logo location")
+      .sort({ createdAt: -1 });
+
+    const jobs = openJobs
+      .map((job) => {
+        const match = scoreMatch(profile, job);
+        if (!match) {
+          return null;
+        }
+        return { job, match };
+      })
+      .filter(Boolean)
+      .sort((left, right) => {
+        if (right.match.overall !== left.match.overall) {
+          return right.match.overall - left.match.overall;
+        }
+        return String(left.job.title).localeCompare(String(right.job.title));
+      });
+
+    return res.status(200).json({
+      msg: "Recommended jobs",
+      jobs,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+export {
+  createJob,
+  getJobs,
+  getMyJobs,
+  getRecommendedJobs,
+  getJobById,
+  updateJob,
+  deleteJob,
+};

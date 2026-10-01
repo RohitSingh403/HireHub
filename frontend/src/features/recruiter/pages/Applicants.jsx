@@ -2,6 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import Alert from "../../../components/Alert.jsx";
 import Badge from "../../../components/Badge.jsx";
+import MatchBreakdown from "../../../components/MatchBreakdown.jsx";
 import PageHeader from "../../../components/PageHeader.jsx";
 import { inputClass } from "../../../components/Field.jsx";
 import {
@@ -79,7 +80,7 @@ function Applicants() {
         <PageHeader
           eyebrow="Applicants"
           title={job?.title || "Applicants"}
-          text="Move each candidate between applied, shortlisted, rejected, and hired."
+          text="Ranked with the same match as the candidate feed. Highest percent first. Status is still applied, shortlisted, rejected, or hired."
         />
       </div>
       <Alert>{error || rowError}</Alert>
@@ -98,7 +99,7 @@ function Applicants() {
           return (
             <li
               key={application._id}
-              className="flex flex-wrap items-center justify-between gap-4 rounded-3xl border border-line bg-card px-5 py-4"
+              className="grid gap-4 rounded-3xl border border-line bg-card px-5 py-4 lg:grid-cols-[minmax(0,1fr)_280px]"
             >
               <div>
                 <p className="font-medium">{candidate?.name || "Candidate"}</p>
@@ -106,8 +107,11 @@ function Applicants() {
                 <p className="mt-1 text-xs text-muted">
                   Applied {formatDate(application.createdAt)}
                 </p>
+                <div className="mt-4">
+                  <MatchBreakdown match={application.match} />
+                </div>
               </div>
-              <div className="flex items-center gap-3">
+              <div className="flex items-start gap-3">
                 <Badge tone={statusTone(application.status)}>
                   {formatLabel(application.status)}
                 </Badge>

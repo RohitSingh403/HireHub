@@ -15,4 +15,9 @@ async function getCurrentUser() {
   return response.data;
 }
 
-export { register, login, getCurrentUser };
+async function updateProfile(profile) {
+  const response = await api.patch("/api/auth/me", profile);
+  return response.data;
+}
+
+export { register, login, getCurrentUser, updateProfile };

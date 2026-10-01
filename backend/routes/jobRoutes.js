@@ -8,6 +8,7 @@ import {
   getJobById,
   getJobs,
   getMyJobs,
+  getRecommendedJobs,
   updateJob,
 } from "../controllers/jobController.js";
 
@@ -19,6 +20,12 @@ router.get(
   authMiddleware,
   roleMiddleware("recruiter"),
   getMyJobs,
+);
+router.get(
+  "/recommended",
+  authMiddleware,
+  roleMiddleware("candidate"),
+  getRecommendedJobs,
 );
 router.get("/", optionalAuthMiddleware, getJobs);
 router.get("/:id", optionalAuthMiddleware, getJobById);

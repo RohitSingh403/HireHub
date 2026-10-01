@@ -15,7 +15,9 @@ function DashboardLayout() {
         ]
       : [
           { to: "/jobs", label: "Open roles" },
+          { to: "/recommended", label: "Recommended" },
           { to: "/applications", label: "My applications" },
+          { to: "/profile", label: "Profile" },
         ];
 
   function handleLogout() {

@@ -10,6 +10,11 @@ function compactParams(filters) {
   return params;
 }
 
+async function fetchRecommendedJobs() {
+  const response = await api.get("/api/jobs/recommended");
+  return response.data.jobs;
+}
+
 async function fetchJobs(filters) {
   const response = await api.get("/api/jobs", {
     params: compactParams(filters),
@@ -37,4 +42,11 @@ async function updateJob(id, payload) {
   return response.data.job;
 }
 
-export { fetchJobs, fetchJob, fetchMyJobs, createJob, updateJob };
+export {
+  fetchRecommendedJobs,
+  fetchJobs,
+  fetchJob,
+  fetchMyJobs,
+  createJob,
+  updateJob,
+};
