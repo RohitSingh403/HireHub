@@ -7,17 +7,30 @@ import AppRouter from "./routes/AppRouter";
 function App() {
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const setUser = useAuthStore((state) => state.setUser);
+  const logout = useAuthStore((state) => state.logout);
 
   useEffect(() => {
     if (!isAuthenticated) {
       return;
     }
+    let cancelled = false;
     async function restoreUser() {
-      const user = await getCurrentUser();
-      setUser(user);
+      try {
+        const user = await getCurrentUser();
+        if (!cancelled) {
+          setUser(user);
+        }
+      } catch {
+        if (!cancelled) {
+          logout();
+        }
+      }
     }
     restoreUser();
-  }, [isAuthenticated, setUser]);
+    return () => {
+      cancelled = true;
+    };
+  }, [isAuthenticated, setUser, logout]);
 
   return <AppRouter />;
 }

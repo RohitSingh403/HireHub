@@ -4,12 +4,14 @@ import roleMiddleware from "../middleware/roleMiddleware.js";
 import {
   createCompany,
   getCompanyById,
+  getMyCompany,
   updateCompany,
 } from "../controllers/companyController.js";
 
 const router = express.Router();
 
 router.post("/", authMiddleware, roleMiddleware("recruiter"), createCompany);
+router.get("/me", authMiddleware, roleMiddleware("recruiter"), getMyCompany);
 router.get("/:id", getCompanyById);
 router.patch(
   "/:id",

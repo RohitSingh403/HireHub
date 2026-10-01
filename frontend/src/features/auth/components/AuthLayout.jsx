@@ -1,16 +1,19 @@
 import AuthBrandPanel from "./AuthBrandPanel";
+import { LogoLockup } from "../../../components/Logo.jsx";
 
-function AuthLayout({ children }) {
+function AuthLayout({ children, line }) {
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-6xl bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-2 min-h-162.5">
-          <AuthBrandPanel></AuthBrandPanel>
-
-          <section className="p-8 md:p-12">{children}</section>
+    <main className="grid min-h-screen lg:grid-cols-2">
+      <AuthBrandPanel line={line} />
+      <section className="flex items-center justify-center px-5 py-10 sm:px-10">
+        <div className="w-full max-w-md">
+          <LogoLockup to="/" />
+          <p className="mt-4 text-sm leading-6 text-muted lg:hidden">{line}</p>
+          {children}
         </div>
-      </div>
+      </section>
     </main>
   );
 }
+
 export default AuthLayout;

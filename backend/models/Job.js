@@ -23,7 +23,7 @@ const jobSchema = new mongoose.Schema(
     employmentType: {
       type: String,
       required: [true, "Employment type is required"],
-      enum: ["full-time", "part-time", "contract", "internship", "remote-only"],
+      enum: ["full-time", "part-time", "contract", "internship"],
       default: "full-time",
     },
     workMode: {
@@ -63,6 +63,11 @@ const jobSchema = new mongoose.Schema(
       required: [true, "Experience level is required"],
       trim: true,
     },
+    experienceMin: {
+      type: Number,
+      min: [0, "Experience minimum cannot be negative"],
+      default: 0,
+    },
     createdBy: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "User",
@@ -82,6 +87,17 @@ const jobSchema = new mongoose.Schema(
 jobSchema.index({
   title: "text",
   skills: "text",
+});
+
+jobSchema.index({ status: 1, createdAt: -1, _id: -1 });
+jobSchema.index({ status: 1, employmentType: 1, createdAt: -1, _id: -1 });
+jobSchema.index({ status: 1, workMode: 1, createdAt: -1, _id: -1 });
+jobSchema.index({
+  status: 1,
+  employmentType: 1,
+  workMode: 1,
+  createdAt: -1,
+  _id: -1,
 });
 
 const Job = mongoose.model("Job", jobSchema);

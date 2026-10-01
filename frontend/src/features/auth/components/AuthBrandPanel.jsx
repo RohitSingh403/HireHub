@@ -1,12 +1,18 @@
-function AuthBrandPanel() {
+function AuthBrandPanel({ line }) {
   return (
-    <section className=" bg-blue-50 p-8 md:p-12">
-      <div className="flex items-center gap-2">
-        <img className="h-13 " src="/Hire-Hub_logo.png" alt="logo" />
-        <h1 className="text-2xl font-bold text-slate-900 w-24 h-auto">
-          HireHub
+    <section className="hidden flex-col justify-between bg-ink p-10 text-paper lg:flex lg:p-14">
+      <p className="text-sm font-medium uppercase tracking-[0.18em] text-paper/60">
+        HireHub
+      </p>
+      <div>
+        <h1 className="font-display text-5xl leading-tight">
+          Find a role. Or fill one.
         </h1>
+        <p className="mt-5 max-w-md text-lg leading-7 text-paper/80">{line}</p>
       </div>
+      <p className="text-sm text-paper/60">
+        Candidate and recruiter accounts stay separate.
+      </p>
     </section>
   );
 }
