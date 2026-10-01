@@ -7,6 +7,7 @@ import companyRouter from "./routes/companyRoutes.js";
 import applicationRouter from "./routes/applicationRoutes.js";
 import candidateApplicationRouter from "./routes/candidateApplicationRoutes.js";
 import applicationStatusRouter from "./routes/applicationStatusRoutes.js";
+import adminRouter from "./routes/adminRoutes.js";
 import errorMiddleware from "./middleware/errorMiddleware.js";
 
 const app = express();
@@ -27,6 +28,7 @@ app.use("/api/companies", companyRouter);
 app.use("/api/jobs", applicationRouter);
 app.use("/api/applications", candidateApplicationRouter);
 app.use("/api/applications", applicationStatusRouter);
+app.use("/api/admin", adminRouter);
 app.use(errorMiddleware);
 
 export default app;

@@ -17,6 +17,23 @@ const recruiterLinks = [
   { to: "/recruiter/jobs/new", label: "Post a job", end: false },
 ];
 
+const adminLinks = [
+  { to: "/admin", label: "Overview", end: true },
+  { to: "/admin/users", label: "Users", end: true },
+  { to: "/admin/jobs", label: "Jobs", end: true },
+  { to: "/admin/companies", label: "Companies", end: true },
+];
+
+function linksFor(role) {
+  if (role === "admin") {
+    return adminLinks;
+  }
+  if (role === "recruiter") {
+    return recruiterLinks;
+  }
+  return candidateLinks;
+}
+
 function navClass(isActive) {
   return `rounded-xl px-3 py-2 text-sm font-medium ${
     isActive ? "bg-ink text-paper" : "text-muted hover:bg-paper hover:text-ink"
@@ -27,7 +44,7 @@ function DashboardLayout() {
   const user = useAuthStore((state) => state.user);
   const logout = useAuthStore((state) => state.logout);
   const navigate = useNavigate();
-  const links = user?.role === "recruiter" ? recruiterLinks : candidateLinks;
+  const links = linksFor(user?.role);
 
   function handleLogout() {
     logout();
