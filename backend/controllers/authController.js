@@ -48,7 +48,7 @@ async function loginUser(req, res, next) {
   try {
     const { email, password, role } = req.body;
 
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ email }).select("+password");
     if (!user) {
       return res.status(401).json({
         msg: "Invalid email or password",
@@ -75,7 +75,7 @@ async function loginUser(req, res, next) {
         role: user.role,
       },
       process.env.JWT_SECRET,
-      // { expiresIn: "1h" },
+      { expiresIn: "7d" },
     );
 
     return res.status(200).json({

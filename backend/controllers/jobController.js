@@ -1,6 +1,29 @@
 import Company from "../models/Company.js";
 import Job from "../models/Job.js";
 
+const EMPLOYMENT_TYPES = ["full-time", "part-time", "contract", "internship"];
+const WORK_MODES = ["remote", "hybrid", "onsite"];
+const JOB_STATUSES = ["open", "closed", "draft"];
+
+function escapeRegex(value) {
+  return value.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+function queryValue(value) {
+  const raw = Array.isArray(value) ? value[0] : value;
+  if (raw === undefined || raw === null) {
+    return "";
+  }
+  return String(raw).trim();
+}
+
+function isJobOwner(job, user) {
+  if (!user?.userId || !job?.createdBy) {
+    return false;
+  }
+  return job.createdBy.toString() === String(user.userId);
+}
+
 async function createJob(req, res, next) {
   try {
     const {
@@ -23,7 +46,9 @@ async function createJob(req, res, next) {
       !location ||
       !employmentType ||
       !workMode ||
-      !salaryMin ||
+      salaryMin === undefined ||
+      salaryMin === null ||
+      salaryMin === "" ||
       !skills ||
       !experience
     ) {
@@ -46,6 +71,15 @@ async function createJob(req, res, next) {
       });
     }
 
+    if (
+      req.body.status !== undefined &&
+      !JOB_STATUSES.includes(req.body.status)
+    ) {
+      return res.status(400).json({
+        msg: "Invalid job status",
+      });
+    }
+
     const newJob = await Job.create({
       title,
       description,
@@ -58,6 +92,7 @@ async function createJob(req, res, next) {
       skills,
       experience,
       createdBy: req.user.userId,
+      ...(JOB_STATUSES.includes(req.body.status) ? { status: req.body.status } : {}),
     });
 
     return res.status(201).json({
@@ -71,7 +106,48 @@ async function createJob(req, res, next) {
 
 async function getJobs(req, res, next) {
   try {
-    const allJobs = await Job.find();
+    const keyword = queryValue(req.query.keyword);
+    const location = queryValue(req.query.location);
+    const employmentType = queryValue(req.query.employmentType);
+    const workMode = queryValue(req.query.workMode);
+    const filter = { status: "open" };
+
+    if (employmentType) {
+      if (!EMPLOYMENT_TYPES.includes(employmentType)) {
+        return res.status(400).json({
+          msg: "Invalid employment type",
+        });
+      }
+      filter.employmentType = employmentType;
+    }
+
+    if (workMode) {
+      if (!WORK_MODES.includes(workMode)) {
+        return res.status(400).json({
+          msg: "Invalid work mode",
+        });
+      }
+      filter.workMode = workMode;
+    }
+
+    if (location) {
+      filter.location = { $regex: escapeRegex(location), $options: "i" };
+    }
+
+    if (keyword) {
+      const pattern = () => ({ $regex: escapeRegex(keyword), $options: "i" });
+      filter.$or = [
+        { title: pattern() },
+        { description: pattern() },
+        { skills: pattern() },
+        { location: pattern() },
+      ];
+    }
+
+    const allJobs = await Job.find(filter)
+      .populate("company", "name logo location")
+      .sort({ createdAt: -1 });
+
     return res.status(200).json({
       msg: "All jobs",
       allJobs: allJobs,
@@ -81,11 +157,35 @@ async function getJobs(req, res, next) {
   }
 }
 
+async function getMyJobs(req, res, next) {
+  try {
+    const jobs = await Job.find({ createdBy: req.user.userId })
+      .populate("company", "name logo location")
+      .sort({ createdAt: -1 });
+
+    return res.status(200).json({
+      msg: "Your jobs",
+      jobs,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function getJobById(req, res, next) {
   try {
-    const findJob = await Job.findById(req.params.id);
+    const findJob = await Job.findById(req.params.id).populate(
+      "company",
+      "name logo location industry website description",
+    );
 
     if (!findJob) {
+      return res.status(404).json({
+        msg: "Job not found",
+      });
+    }
+
+    if (findJob.status !== "open" && !isJobOwner(findJob, req.user)) {
       return res.status(404).json({
         msg: "Job not found",
       });
@@ -167,7 +267,7 @@ async function updateJob(req, res, next) {
     }
 
     const patchJob = await Job.findByIdAndUpdate(getJobId, updateJobData, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
 
@@ -205,4 +305,4 @@ async function deleteJob(req, res, next) {
   }
 }
 
-export { createJob, getJobs, getJobById, updateJob, deleteJob };
+export { createJob, getJobs, getMyJobs, getJobById, updateJob, deleteJob };

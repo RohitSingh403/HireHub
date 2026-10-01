@@ -1,60 +1,121 @@
-# 💼 HireHub
+# HireHub
 
-> A modern full-stack job portal that connects candidates and recruiters through a secure, role-based recruitment platform.
+HireHub is a small job portal with two working roles. A candidate registers, sees only open jobs, and applies once. A recruiter creates a company, posts jobs, and moves applicants through applied, shortlisted, rejected, and hired.
 
-HireHub is a production-oriented full-stack web application designed to simulate a real-world recruitment ecosystem.
-
-The platform provides separate workflows for **Candidates, Recruiters, and Administrators**, with JWT authentication, role-based authorization, ownership validation, job management, company management, and application tracking.
-
----
-
-## ✨ Features
-
-### 🔐 Authentication & Security
-
-- JWT-based authentication
-- Secure password hashing with bcrypt
-- Role-based access control
-- Protected API routes
-- Recruiter ownership validation
-- Candidate-only application access
-- Admin self-registration prevention
-- Centralized error handling
-- Duplicate resource detection
-- MongoDB ObjectId validation
-
-### 👨‍💻 Candidate
-
-- Browse available jobs
-- View individual job details
-- Apply for jobs
-- Prevent duplicate applications
-- View personal applications
-- Track application status
-
-### 🏢 Recruiter
-
-- Create and manage company profiles
-- Create job listings
-- Update job listings
-- Delete job listings
-- View applicants for owned jobs
-- Update application status
-- Manage recruitment workflow
-
-### 📋 Application Management
-
-Supported application statuses:
+## Architecture
 
 ```text
-Applied
-   ↓
-Shortlisted
-   ↓
-Hired
+React (Vite) → Axios → Express route
+  → auth, then role, then controller
+  → Mongoose → MongoDB
+```
 
-or
+Authentication answers who you are. Authorization answers what you may do. Protected routes run `authMiddleware`, then `roleMiddleware`, then the controller. A missing or invalid token stops at auth with 401. A valid token with the wrong role stops at the role check with 403. The controller then returns 400 for bad input, 404 for a missing record, and 403 when the record belongs to someone else.
 
-Applied
-   ↓
-Rejected
+| Piece | Choice |
+| --- | --- |
+| Frontend | React, Vite, React Router, Tailwind, Zustand, Axios, React Hook Form, Zod |
+| Backend | Node.js, Express (ES modules), MongoDB, Mongoose, JWT, bcrypt |
+| Entities | User, Company, Job, Application |
+
+A recruiter owns a company. A company has jobs. A job receives applications from candidates.
+
+## Roles
+
+| Role | What they can do |
+| --- | --- |
+| Candidate | Register, log in, list open jobs, open one, apply once, read their applications |
+| Recruiter | Register, log in, create and update their company, create and edit their jobs, list applicants, set application status |
+| Admin | A valid role on the user model. Public registration rejects it. There is no admin UI. |
+
+Login sends the account back to the matching home: candidates land on the open-job list, recruiters land on their hiring desk.
+
+## Ownership
+
+`owner` on a company and `createdBy` on a job are set from `req.user.userId` in the JWT. The client body cannot choose them.
+
+A Mongoose `ref` does not prove the related document exists. Job create loads the company with `Company.findById` and checks that `company.owner` is the recruiter in the token. A made-up company id is 404. Another recruiter’s company is 403.
+
+The same rule applies when editing a job or reading its applicants: the job’s `createdBy` must match the token. Another recruiter gets 403. A missing id gets 404.
+
+One candidate cannot apply twice to the same job. `Application` has a unique index on `{ candidate, job }`, and the apply controller rejects a second insert with 409.
+
+## Job reads
+
+`GET /api/jobs` and `GET /api/jobs/:id` use optional auth. They do not use `authMiddleware`.
+
+- No `Authorization` header: the request stays anonymous and only `open` jobs are returned.
+- A header that is present but invalid: 401.
+- An open job: 200 for anyone.
+- A draft or closed job by id: 200 only for the recruiter who created it. Everyone else gets 404, the same body as a missing job.
+
+`authMiddleware` is unchanged. Routes that require a login still return 401 when the header is missing.
+
+The public list accepts `keyword`, `location`, `employmentType`, and `workMode`. Employment type is `full-time`, `part-time`, `contract`, or `internship`. Work mode is `remote`, `hybrid`, or `onsite`. Keyword matches title, description, skills, and location. The job schema also keeps a text index on title and skills.
+
+Drafts and closed jobs are absent from that list, including for their owner. The owner loads them from `GET /api/jobs/mine` or by id.
+
+## Security choices in this pass
+
+- JWTs expire in 7 days (`expiresIn: "7d"` on login).
+- `password` on the User model is `select: false`. Login loads it with `.select("+password")`. Other reads, including `GET /api/auth/me` and populated applicants, do not return the hash.
+
+Helmet, rate limits, and stricter CORS are intentionally not in this pass.
+
+## How to run
+
+Use Node.js 20+ and a MongoDB database (local or Atlas). Do not commit `.env`.
+
+```bash
+cd backend
+cp .env.example .env
+```
+
+Set `MONGO_URI` and a long `JWT_SECRET`. `PORT` defaults to `5001`, which matches the Vite proxy.
+
+```bash
+npm install
+npm test
+npm run dev
+```
+
+`npm test` starts an in-memory MongoDB. It does not use your `.env`. The suite checks: no token 401, wrong role 403, missing resource 404, another recruiter 403, owner success, and a second apply rejected. It also checks open-job reads, JWT expiry, and that the password hash is hidden.
+
+```bash
+cd frontend
+npm install
+npm run dev
+```
+
+Open the Vite URL. The dev server proxies `/api` to `http://localhost:5001`. For a built frontend on another origin, set `VITE_API_URL` to the API origin.
+
+### Click-through
+
+1. Register as a recruiter. Create a company. Post a job and leave it open.
+2. Log out. Register as a candidate. You land on the open-job list. Filter it, open the job, apply, then apply again and read the API error. Open My applications.
+3. Log in as the recruiter. Open applicants and change the status.
+
+## API
+
+| Method | Path | Who |
+| --- | --- | --- |
+| POST | `/api/auth/register` | Public. `candidate` or `recruiter` only |
+| POST | `/api/auth/login` | Public. Returns a JWT |
+| GET | `/api/auth/me` | Any logged-in user |
+| POST | `/api/companies` | Recruiter. `owner` comes from the token |
+| GET | `/api/companies/me` | Recruiter. Their latest company, or 404 |
+| PATCH | `/api/companies/:id` | Owning recruiter |
+| GET | `/api/jobs` | Public, open jobs only. Optional filters |
+| GET | `/api/jobs/mine` | Recruiter. Includes draft and closed |
+| GET | `/api/jobs/:id` | Public if open. Creator if draft or closed |
+| POST | `/api/jobs` | Recruiter who owns the company |
+| PATCH | `/api/jobs/:id` | Creating recruiter |
+| DELETE | `/api/jobs/:id` | Creating recruiter |
+| POST | `/api/jobs/:jobId/apply` | Candidate, once, and only if the job is open |
+| GET | `/api/applications/me` | Candidate |
+| GET | `/api/jobs/:jobId/applications` | Creating recruiter |
+| PATCH | `/api/applications/:id/status` | Creating recruiter. `applied`, `shortlisted`, `rejected`, `hired` |
+
+## Out of scope
+
+Admin screens, the AMC Monitoring Portal, and extra security middleware beyond JWT expiry and hiding the password hash.

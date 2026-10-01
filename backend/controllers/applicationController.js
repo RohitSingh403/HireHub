@@ -48,7 +48,14 @@ async function getMyApplications(req, res, next) {
     const userId = req.user.userId;
     const findApplication = await Application.find({
       candidate: userId,
-    });
+    })
+      .populate({
+        path: "job",
+        select:
+          "title location employmentType workMode status salaryMin salaryMax company",
+        populate: { path: "company", select: "name logo location" },
+      })
+      .sort({ createdAt: -1 });
     return res.status(200).json({
       msg: "Applications successfully found",
       applications: findApplication,
@@ -78,7 +85,9 @@ async function getJobApplications(req, res, next) {
 
     const applications = await Application.find({
       job: jobId,
-    });
+    })
+      .populate("candidate", "name email")
+      .sort({ createdAt: -1 });
 
     return res.status(200).json({
       msg: "Job applications successfully found",

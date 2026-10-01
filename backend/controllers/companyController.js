@@ -45,6 +45,27 @@ async function createCompany(req, res, next) {
   }
 }
 
+async function getMyCompany(req, res, next) {
+  try {
+    const company = await Company.findOne({ owner: req.user.userId }).sort({
+      createdAt: -1,
+    });
+
+    if (!company) {
+      return res.status(404).json({
+        msg: "Company not found",
+      });
+    }
+
+    return res.status(200).json({
+      msg: "Company found successfully",
+      company,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
 async function getCompanyById(req, res, next) {
   const companyId = req.params.id;
 
@@ -123,7 +144,7 @@ async function updateCompany(req, res, next) {
       companyId,
       companyUpdate,
       {
-        new: true,
+        returnDocument: "after",
         runValidators: true,
       },
     );
@@ -137,4 +158,4 @@ async function updateCompany(req, res, next) {
   }
 }
 
-export { createCompany, getCompanyById, updateCompany };
+export { createCompany, getMyCompany, getCompanyById, updateCompany };

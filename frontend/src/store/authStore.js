@@ -1,3 +1,4 @@
+import { useSyncExternalStore } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 
@@ -15,7 +16,7 @@ const useAuthStore = create(
           isAuthenticated: true,
         });
       },
-      
+
       setUser: (user) => {
         set({
           user: user,
@@ -35,5 +36,13 @@ const useAuthStore = create(
     },
   ),
 );
+
+export function useAuthHydrated() {
+  return useSyncExternalStore(
+    (onStoreChange) => useAuthStore.persist.onFinishHydration(onStoreChange),
+    () => useAuthStore.persist.hasHydrated(),
+    () => true,
+  );
+}
 
 export default useAuthStore;

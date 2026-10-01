@@ -2,15 +2,13 @@ import AuthBrandPanel from "./AuthBrandPanel";
 
 function AuthLayout({ children }) {
   return (
-    <main className="min-h-screen bg-slate-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-6xl bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-        <div className="grid grid-cols-1 md:grid-cols-2 min-h-162.5">
-          <AuthBrandPanel></AuthBrandPanel>
-
-          <section className="p-8 md:p-12">{children}</section>
-        </div>
+    <main className="flex min-h-screen items-center justify-center p-4 sm:p-6">
+      <div className="grid w-full max-w-6xl overflow-hidden rounded-3xl border border-line bg-card shadow-sm md:min-h-[640px] md:grid-cols-2">
+        <AuthBrandPanel />
+        <section className="p-6 sm:p-10 md:p-12">{children}</section>
       </div>
     </main>
   );
 }
+
 export default AuthLayout;

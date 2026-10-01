@@ -1,18 +1,31 @@
 function RoleSelector({ selectedRole, setSelectedRole }) {
+  const roles = [
+    { id: "candidate", label: "Candidate" },
+    { id: "recruiter", label: "Recruiter" },
+  ];
+
   return (
-    <div className="w-full bg-blue-50  h-15 rounded-sm flex justify-center items-center">
-      <button
-        className={` p-2 text-gray-700 rounded-sm w-58 text-[20px] cursor-pointer ${selectedRole === "candidate" ? " bg-[#2563EB] text-white " : " bg-blue-50 "}`}
-        onClick={() => setSelectedRole("candidate")}
-      >
-        Candidate
-      </button>
-      <button
-        className={` p-2 text-gray-700 rounded-sm w-58 text-[20px] cursor-pointer  ${selectedRole === "recruiter" ? " bg-[#2563EB] text-white " : " bg-blue-50 "}`}
-        onClick={() => setSelectedRole("recruiter")}
-      >
-        Recruiter
-      </button>
+    <div
+      className="grid grid-cols-2 rounded-full bg-[#efe8dc] p-1"
+      role="group"
+      aria-label="Account type"
+    >
+      {roles.map((role) => {
+        const selected = selectedRole === role.id;
+        return (
+          <button
+            key={role.id}
+            type="button"
+            className={`rounded-full px-3 py-2 text-sm font-medium ${
+              selected ? "bg-ink text-paper" : "text-muted"
+            }`}
+            aria-pressed={selected}
+            onClick={() => setSelectedRole(role.id)}
+          >
+            {role.label}
+          </button>
+        );
+      })}
     </div>
   );
 }
