@@ -2,6 +2,7 @@ import Job from "../models/Job.js";
 import Application from "../models/Application.js";
 import { scoreMatch } from "../services/match.js";
 import { legalNextStatuses, transitionError } from "../services/pipeline.js";
+import { isRankCursor, pageRanked, readPage } from "../services/pagination.js";
 
 async function applyForJob(req, res, next) {
   try {
@@ -93,6 +94,14 @@ async function getJobApplications(req, res, next) {
       });
     }
 
+    const page = readPage(req.query);
+    if (page.error) {
+      return res.status(400).json({ msg: page.error });
+    }
+    if (!isRankCursor(page.cursor)) {
+      return res.status(400).json({ msg: "Invalid cursor" });
+    }
+
     const applications = await Application.find({
       job: jobId,
     }).populate(
@@ -109,20 +118,19 @@ async function getJobApplications(req, res, next) {
           nextStatuses: legalNextStatuses(plain.status),
         };
       })
-      .sort((left, right) => {
-        const leftScore = left.match?.overall ?? -1;
-        const rightScore = right.match?.overall ?? -1;
-        if (rightScore !== leftScore) {
-          return rightScore - leftScore;
-        }
-        return String(left.candidate?.name ?? "").localeCompare(
-          String(right.candidate?.name ?? ""),
-        );
-      });
+      .sort((left, right) => compareApplicants(left, right));
+
+    const { page: visible, nextCursor } = pageRanked(
+      ranked,
+      page.limit,
+      page.cursor,
+      applicantKey,
+    );
 
     return res.status(200).json({
       msg: "Job applications successfully found",
-      applications: ranked,
+      applications: visible,
+      nextCursor,
     });
   } catch (err) {
     next(err);
@@ -225,6 +233,27 @@ async function updateApplicationStatus(req, res, next) {
   } catch (err) {
     next(err);
   }
+}
+
+function applicantKey(application) {
+  return {
+    overall: application.match?.overall ?? -1,
+    label: String(application.candidate?.name ?? ""),
+    id: String(application._id),
+  };
+}
+
+function compareApplicants(left, right) {
+  const leftKey = applicantKey(left);
+  const rightKey = applicantKey(right);
+  if (rightKey.overall !== leftKey.overall) {
+    return rightKey.overall - leftKey.overall;
+  }
+  const byName = leftKey.label.localeCompare(rightKey.label);
+  if (byName !== 0) {
+    return byName;
+  }
+  return leftKey.id.localeCompare(rightKey.id);
 }
 
 export {

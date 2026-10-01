@@ -15,9 +15,14 @@ async function fetchMyApplication(id) {
   return response.data.application;
 }
 
-async function fetchJobApplications(jobId) {
-  const response = await api.get(`/api/jobs/${jobId}/applications`);
-  return response.data.applications;
+async function fetchJobApplications(jobId, cursor) {
+  const response = await api.get(`/api/jobs/${jobId}/applications`, {
+    params: cursor ? { cursor } : {},
+  });
+  return {
+    applications: response.data.applications,
+    nextCursor: response.data.nextCursor,
+  };
 }
 
 async function updateApplicationStatus(id, status) {

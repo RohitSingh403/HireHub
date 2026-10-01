@@ -10,16 +10,24 @@ function compactParams(filters) {
   return params;
 }
 
-async function fetchRecommendedJobs() {
-  const response = await api.get("/api/jobs/recommended");
-  return response.data.jobs;
+async function fetchRecommendedJobs(cursor) {
+  const response = await api.get("/api/jobs/recommended", {
+    params: compactParams({ cursor }),
+  });
+  return {
+    jobs: response.data.jobs,
+    nextCursor: response.data.nextCursor,
+  };
 }
 
 async function fetchJobs(filters) {
   const response = await api.get("/api/jobs", {
     params: compactParams(filters),
   });
-  return response.data.allJobs;
+  return {
+    jobs: response.data.allJobs,
+    nextCursor: response.data.nextCursor,
+  };
 }
 
 async function fetchJob(id) {

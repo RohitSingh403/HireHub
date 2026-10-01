@@ -16,7 +16,9 @@ function Applicants() {
   const { id } = useParams();
   const [job, setJob] = useState(null);
   const [applications, setApplications] = useState([]);
+  const [nextCursor, setNextCursor] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
   const [rowError, setRowError] = useState("");
   const [savingId, setSavingId] = useState("");
@@ -31,7 +33,8 @@ function Applicants() {
         ]);
         if (!cancelled) {
           setJob(nextJob);
-          setApplications(nextApplications);
+          setApplications(nextApplications.applications);
+          setNextCursor(nextApplications.nextCursor);
         }
       } catch (err) {
         if (!cancelled) {
@@ -48,6 +51,23 @@ function Applicants() {
       cancelled = true;
     };
   }, [id]);
+
+  async function loadMore() {
+    if (!nextCursor || loadingMore) {
+      return;
+    }
+    setLoadingMore(true);
+    setError("");
+    try {
+      const page = await fetchJobApplications(id, nextCursor);
+      setApplications((current) => [...current, ...page.applications]);
+      setNextCursor(page.nextCursor);
+    } catch (err) {
+      setError(apiError(err, "Could not load applicants."));
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   async function changeStatus(applicationId, status) {
     setRowError("");
@@ -142,6 +162,18 @@ function Applicants() {
           );
         })}
       </ul>
+      {nextCursor ? (
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="rounded-full border border-line bg-card px-5 py-2.5 text-sm font-semibold disabled:opacity-60"
+          >
+            {loadingMore ? "Loading…" : "Load more"}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

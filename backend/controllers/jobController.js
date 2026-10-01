@@ -2,6 +2,14 @@ import Company from "../models/Company.js";
 import Job from "../models/Job.js";
 import User from "../models/User.js";
 import { scoreMatch } from "../services/match.js";
+import {
+  isJobCursor,
+  isRankCursor,
+  jobCursor,
+  pageRanked,
+  readPage,
+  withJobCursor,
+} from "../services/pagination.js";
 
 const EMPLOYMENT_TYPES = ["full-time", "part-time", "contract", "internship"];
 const WORK_MODES = ["remote", "hybrid", "onsite"];
@@ -171,13 +179,25 @@ async function getJobs(req, res, next) {
       ];
     }
 
-    const allJobs = await Job.find(filter)
+    const page = readPage(req.query);
+    if (page.error) {
+      return res.status(400).json({ msg: page.error });
+    }
+    if (!isJobCursor(page.cursor)) {
+      return res.status(400).json({ msg: "Invalid cursor" });
+    }
+
+    const found = await Job.find(withJobCursor(filter, page.cursor))
       .populate("company", "name logo location")
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1, _id: -1 })
+      .limit(page.limit + 1);
+
+    const allJobs = found.slice(0, page.limit);
 
     return res.status(200).json({
       msg: "All jobs",
-      allJobs: allJobs,
+      allJobs,
+      nextCursor: found.length > page.limit ? jobCursor(allJobs.at(-1)) : null,
     });
   } catch (err) {
     next(err);
@@ -354,11 +374,19 @@ async function getRecommendedJobs(req, res, next) {
       });
     }
 
+    const page = readPage(req.query);
+    if (page.error) {
+      return res.status(400).json({ msg: page.error });
+    }
+    if (!isRankCursor(page.cursor)) {
+      return res.status(400).json({ msg: "Invalid cursor" });
+    }
+
     const openJobs = await Job.find({ status: "open" })
       .populate("company", "name logo location")
       .sort({ createdAt: -1 });
 
-    const jobs = openJobs
+    const ranked = openJobs
       .map((job) => {
         const match = scoreMatch(profile, job);
         if (!match) {
@@ -367,20 +395,42 @@ async function getRecommendedJobs(req, res, next) {
         return { job, match };
       })
       .filter(Boolean)
-      .sort((left, right) => {
-        if (right.match.overall !== left.match.overall) {
-          return right.match.overall - left.match.overall;
-        }
-        return String(left.job.title).localeCompare(String(right.job.title));
-      });
+      .sort((left, right) => compareRank(rankKey(left), rankKey(right)));
+
+    const { page: jobs, nextCursor } = pageRanked(
+      ranked,
+      page.limit,
+      page.cursor,
+      rankKey,
+    );
 
     return res.status(200).json({
       msg: "Recommended jobs",
       jobs,
+      nextCursor,
     });
   } catch (err) {
     next(err);
   }
+}
+
+function rankKey(item) {
+  return {
+    overall: item.match.overall,
+    label: String(item.job.title),
+    id: String(item.job._id),
+  };
+}
+
+function compareRank(left, right) {
+  if (right.overall !== left.overall) {
+    return right.overall - left.overall;
+  }
+  const byLabel = left.label.localeCompare(right.label);
+  if (byLabel !== 0) {
+    return byLabel;
+  }
+  return left.id.localeCompare(right.id);
 }
 
 export {

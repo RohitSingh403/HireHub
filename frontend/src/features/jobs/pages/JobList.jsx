@@ -25,7 +25,9 @@ function JobList() {
     workMode: params.get("workMode") ?? "",
   });
   const [jobs, setJobs] = useState([]);
+  const [nextCursor, setNextCursor] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
@@ -40,9 +42,10 @@ function JobList() {
       setLoading(true);
       setError("");
       try {
-        const nextJobs = await fetchJobs(filters);
+        const page = await fetchJobs(filters);
         if (!cancelled) {
-          setJobs(nextJobs);
+          setJobs(page.jobs);
+          setNextCursor(page.nextCursor);
         }
       } catch (err) {
         if (!cancelled) {
@@ -73,6 +76,29 @@ function JobList() {
       }
     }
     setParams(next);
+  }
+
+  async function loadMore() {
+    if (!nextCursor || loadingMore) {
+      return;
+    }
+    setLoadingMore(true);
+    setError("");
+    try {
+      const page = await fetchJobs({
+        keyword: params.get("keyword") ?? "",
+        location: params.get("location") ?? "",
+        employmentType: params.get("employmentType") ?? "",
+        workMode: params.get("workMode") ?? "",
+        cursor: nextCursor,
+      });
+      setJobs((current) => [...current, ...page.jobs]);
+      setNextCursor(page.nextCursor);
+    } catch (err) {
+      setError(apiError(err, "Could not load jobs."));
+    } finally {
+      setLoadingMore(false);
+    }
   }
 
   function clearFilters() {
@@ -222,6 +248,18 @@ function JobList() {
           </li>
         ))}
       </ul>
+      {nextCursor ? (
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="rounded-full border border-line bg-card px-5 py-2.5 text-sm font-semibold disabled:opacity-60"
+          >
+            {loadingMore ? "Loading…" : "Load more"}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -86,9 +86,33 @@ The candidate can open the application and read that timeline. A candidate canno
 
 `authMiddleware` is unchanged. Routes that require a login still return 401 when the header is missing.
 
-The public list accepts `keyword`, `location`, `employmentType`, and `workMode`. Employment type is `full-time`, `part-time`, `contract`, or `internship`. Work mode is `remote`, `hybrid`, or `onsite`. Keyword matches title, description, skills, and location. The job schema also keeps a text index on title and skills.
+The public list accepts `keyword`, `location`, `employmentType`, and `workMode`. Employment type is `full-time`, `part-time`, `contract`, or `internship`. Work mode is `remote`, `hybrid`, or `onsite`. Keyword matches title, description, skills, and location with a case-insensitive regular expression. Location uses the same kind of expression. Those regex filters are not backed by an index.
 
 Drafts and closed jobs are absent from that list, including for their owner. The owner loads them from `GET /api/jobs/mine` or by id.
+
+## Pagination
+
+`GET /api/jobs`, `GET /api/jobs/recommended`, and `GET /api/jobs/:jobId/applications` accept `limit` and `cursor`. The default limit is 10. A larger limit is capped at 50. A limit that is not a positive integer, and a cursor that cannot be read, are 400.
+
+The response includes `nextCursor`. It is `null` when the page is the last one. Send that cursor back to load the following page. The open-job list is newest first (`createdAt`, then `_id`). The job list and the recommended screen append the next page.
+
+Recommended jobs and applicants are scored, then sliced. Their order is overall match, then title or candidate name, then id. The cursor stores the last row's score, label, and id. The open-job query for recommendations still filters `status: "open"` before that in-memory slice.
+
+## Indexes
+
+Each index below matches a query the API actually runs.
+
+| Index | Query |
+| --- | --- |
+| Job `{ status, createdAt, _id }` | Public list with no employment type or work mode, and `find({ status: "open" })` sorted newest first for recommendations |
+| Job `{ status, employmentType, createdAt, _id }` | Public list when employment type is set |
+| Job `{ status, workMode, createdAt, _id }` | Public list when work mode is set |
+| Job `{ status, employmentType, workMode, createdAt, _id }` | Public list when both equality filters are set |
+| Application `{ candidate, job }` unique | Duplicate apply lookup, and the one-application rule |
+| Application `{ candidate, createdAt }` | `GET /api/applications/me`, a candidate's applications newest first |
+| Application `{ job }` | Recruiter applicant lookup `find({ job })` before the match sort |
+
+A text index on title and skills is still declared. The list does not use `$text`, so that index is not what keyword search hits.
 
 ## Security choices in this pass
 
@@ -114,7 +138,9 @@ npm test
 npm run dev
 ```
 
-`npm test` starts an in-memory MongoDB. It does not use your `.env`. The suite checks: no token 401, wrong role 403, missing resource 404, another recruiter 403, owner success, and a second apply rejected. It also checks open-job reads, JWT expiry, that the password hash is hidden, a known match score, a skill gap, a salary miss, that a recruiter cannot rank another recruiter's applicants, an illegal stage skip, a rejection from screening, and that a candidate cannot move an application.
+`npm test` starts an in-memory MongoDB. It does not use your `.env`. The suite checks: no token 401, wrong role 403, missing resource 404, another recruiter 403, owner success, and a second apply rejected. It also checks open-job reads, JWT expiry, that the password hash is hidden, a known match score, a skill gap, a salary miss, that a recruiter cannot rank another recruiter's applicants, an illegal stage skip, a rejection from screening, that a candidate cannot move an application, and that job, recommendation, and applicant pages return a next cursor without repeating a row.
+
+GitHub Actions runs on push and pull request. The workflow installs backend dependencies with `npm ci` and runs `npm test`. A failing test fails the workflow.
 
 ```bash
 cd frontend
@@ -141,9 +167,9 @@ Open the Vite URL. The dev server proxies `/api` to `http://localhost:5001`. For
 | POST | `/api/companies` | Recruiter. `owner` comes from the token |
 | GET | `/api/companies/me` | Recruiter. Their latest company, or 404 |
 | PATCH | `/api/companies/:id` | Owning recruiter |
-| GET | `/api/jobs` | Public, open jobs only. Optional filters |
+| GET | `/api/jobs` | Public, open jobs only. Optional filters. `limit` (default 10, max 50) and `cursor`. Returns `nextCursor` |
 | GET | `/api/jobs/mine` | Recruiter. Includes draft and closed |
-| GET | `/api/jobs/recommended` | Candidate. Open jobs with a score breakdown, highest first. Jobs with no skills are omitted |
+| GET | `/api/jobs/recommended` | Candidate. Open jobs with a score breakdown, highest first. Jobs with no skills are omitted. `limit` and `cursor` |
 | GET | `/api/jobs/:id` | Public if open. Creator if draft or closed |
 | POST | `/api/jobs` | Recruiter who owns the company |
 | PATCH | `/api/jobs/:id` | Creating recruiter |
@@ -151,7 +177,7 @@ Open the Vite URL. The dev server proxies `/api` to `http://localhost:5001`. For
 | POST | `/api/jobs/:jobId/apply` | Candidate, once, and only if the job is open |
 | GET | `/api/applications/me` | Candidate |
 | GET | `/api/applications/:id` | Owning candidate. Includes the timeline |
-| GET | `/api/jobs/:jobId/applications` | Creating recruiter. Applicants ranked by the same match. Each row includes the legal next statuses |
+| GET | `/api/jobs/:jobId/applications` | Creating recruiter. Applicants ranked by the same match. Each row includes the legal next statuses. `limit` and `cursor` |
 | PATCH | `/api/applications/:id/status` | Creating recruiter. One stage forward, or rejected. Skip is 400 |
 
 ## Out of scope

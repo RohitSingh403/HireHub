@@ -89,6 +89,17 @@ jobSchema.index({
   skills: "text",
 });
 
+jobSchema.index({ status: 1, createdAt: -1, _id: -1 });
+jobSchema.index({ status: 1, employmentType: 1, createdAt: -1, _id: -1 });
+jobSchema.index({ status: 1, workMode: 1, createdAt: -1, _id: -1 });
+jobSchema.index({
+  status: 1,
+  employmentType: 1,
+  workMode: 1,
+  createdAt: -1,
+  _id: -1,
+});
+
 const Job = mongoose.model("Job", jobSchema);
 
 export default Job;

@@ -10,16 +10,19 @@ import { companyName, formatLabel, initials } from "../../../utils/format.js";
 
 function RecommendedJobs() {
   const [jobs, setJobs] = useState([]);
+  const [nextCursor, setNextCursor] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
 
   useEffect(() => {
     let cancelled = false;
     async function load() {
       try {
-        const nextJobs = await fetchRecommendedJobs();
+        const page = await fetchRecommendedJobs();
         if (!cancelled) {
-          setJobs(nextJobs);
+          setJobs(page.jobs);
+          setNextCursor(page.nextCursor);
         }
       } catch (err) {
         if (!cancelled) {
@@ -36,6 +39,23 @@ function RecommendedJobs() {
       cancelled = true;
     };
   }, []);
+
+  async function loadMore() {
+    if (!nextCursor || loadingMore) {
+      return;
+    }
+    setLoadingMore(true);
+    setError("");
+    try {
+      const page = await fetchRecommendedJobs(nextCursor);
+      setJobs((current) => [...current, ...page.jobs]);
+      setNextCursor(page.nextCursor);
+    } catch (err) {
+      setError(apiError(err, "Could not load recommendations."));
+    } finally {
+      setLoadingMore(false);
+    }
+  }
 
   return (
     <div>
@@ -93,6 +113,18 @@ function RecommendedJobs() {
           </li>
         ))}
       </ul>
+      {nextCursor ? (
+        <div className="mt-6 flex justify-center">
+          <button
+            type="button"
+            onClick={loadMore}
+            disabled={loadingMore}
+            className="rounded-full border border-line bg-card px-5 py-2.5 text-sm font-semibold disabled:opacity-60"
+          >
+            {loadingMore ? "Loading…" : "Load more"}
+          </button>
+        </div>
+      ) : null}
     </div>
   );
 }
