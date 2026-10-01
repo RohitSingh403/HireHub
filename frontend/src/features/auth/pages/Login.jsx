@@ -4,6 +4,13 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import AuthLayout from "../components/AuthLayout.jsx";
 import RoleSelector from "../components/RoleSelector.jsx";
+
+const lines = {
+  candidate:
+    "Save a profile, see why a role matches, and follow every application through the pipeline.",
+  recruiter:
+    "Post roles you own, rank applicants with the same match, and move each one stage at a time.",
+};
 import { loginSchema } from "../schemas/authSchema.js";
 import { login } from "../services/authService.js";
 import useAuthStore, { useAuthHydrated } from "../../../store/authStore.js";
@@ -53,19 +60,24 @@ function Login() {
     }
   }
 
-  return (
-    <AuthLayout>
-      <RoleSelector
-        selectedRole={selectedRole}
-        setSelectedRole={setSelectedRole}
-      />
+  const buttonLabel =
+    selectedRole === "recruiter" ? "Sign in as recruiter" : "Sign in as candidate";
 
+  return (
+    <AuthLayout line={lines[selectedRole]}>
       <h2 className="mt-8 font-display text-3xl text-ink">Welcome back</h2>
       <p className="mt-2 text-muted">
         {selectedRole === "recruiter"
           ? "Sign in to manage your company and applicants."
           : "Sign in to see open roles and your applications."}
       </p>
+
+      <div className="mt-6">
+        <RoleSelector
+          selectedRole={selectedRole}
+          setSelectedRole={setSelectedRole}
+        />
+      </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 flex flex-col gap-4">
         <Alert>{errorMessage}</Alert>
@@ -110,7 +122,7 @@ function Login() {
           disabled={submitting}
           className="mt-2 rounded-full bg-pine px-4 py-3 text-sm font-semibold text-white hover:bg-pine-dark disabled:opacity-60"
         >
-          {submitting ? "Signing in…" : "Sign in"}
+          {submitting ? "Signing in…" : buttonLabel}
         </button>
       </form>
 

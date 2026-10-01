@@ -3,14 +3,30 @@ import { Link } from "react-router-dom";
 import PageHeader from "../../../components/PageHeader.jsx";
 import Alert from "../../../components/Alert.jsx";
 import Badge from "../../../components/Badge.jsx";
+import { fetchJobApplications } from "../../applications/services/applicationService.js";
 import { fetchMyCompany } from "../services/companyService.js";
 import { fetchMyJobs } from "../../jobs/services/jobService.js";
 import apiError from "../../../utils/apiError.js";
-import { formatLabel, formatSalary, initials, statusTone } from "../../../utils/format.js";
+import { formatLabel, statusTone } from "../../../utils/format.js";
 
-function RecruiterHome() {
+async function applicationTotals(jobId) {
+  let applicants = 0;
+  let hired = 0;
+  let cursor;
+  do {
+    const page = await fetchJobApplications(jobId, cursor);
+    applicants += page.applications.length;
+    hired += page.applications.filter((item) => item.status === "hired").length;
+    cursor = page.nextCursor;
+  } while (cursor);
+  return { applicants, hired };
+}
+
+function RecruiterHome({ mode = "overview" }) {
   const [company, setCompany] = useState(null);
   const [jobs, setJobs] = useState([]);
+  const [totals, setTotals] = useState({ applicants: 0, hired: 0 });
+  const [counts, setCounts] = useState({});
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
 
@@ -30,11 +46,31 @@ function RecruiterHome() {
         } else if (companyResult.reason?.response?.status !== 404) {
           setError(apiError(companyResult.reason, "Could not load your company."));
         }
-        if (jobResult.status === "fulfilled") {
-          setJobs(jobResult.value);
-        } else {
+        if (jobResult.status !== "fulfilled") {
           setError(apiError(jobResult.reason, "Could not load your jobs."));
+          return;
         }
+        const nextJobs = jobResult.value;
+        setJobs(nextJobs);
+        const perJob = await Promise.all(
+          nextJobs.map(async (job) => {
+            const total = await applicationTotals(job._id);
+            return [job._id, total];
+          }),
+        );
+        if (cancelled) {
+          return;
+        }
+        const nextCounts = {};
+        let applicants = 0;
+        let hired = 0;
+        for (const [jobId, total] of perJob) {
+          nextCounts[jobId] = total.applicants;
+          applicants += total.applicants;
+          hired += total.hired;
+        }
+        setCounts(nextCounts);
+        setTotals({ applicants, hired });
       } finally {
         if (!cancelled) {
           setLoading(false);
@@ -47,12 +83,24 @@ function RecruiterHome() {
     };
   }, []);
 
+  const openJobs = jobs.filter((job) => job.status === "open").length;
+  const statCards = [
+    { label: "Roles", value: jobs.length },
+    { label: "Open", value: openJobs },
+    { label: "Applicants", value: totals.applicants },
+    { label: "Hired", value: totals.hired },
+  ];
+
   return (
     <div>
       <PageHeader
         eyebrow="Recruiters"
-        title="Your hiring desk"
-        text="Draft and closed roles stay off the public list. Open roles can receive one application per candidate."
+        title={mode === "jobs" ? "Jobs" : company?.name || "Overview"}
+        text={
+          mode === "jobs"
+            ? "Every role you posted, with the people who applied."
+            : "Counts come from your jobs and their applications. Drafts and closed roles stay off the public list."
+        }
         action={
           <Link
             to={company ? "/recruiter/jobs/new" : "/recruiter/company"}
@@ -65,89 +113,85 @@ function RecruiterHome() {
       <Alert>{error}</Alert>
       {loading ? <p className="text-muted">Loading your desk…</p> : null}
 
-      {!loading ? (
-        <section className="mb-8 rounded-3xl border border-line bg-card p-5">
-          {company ? (
-            <div className="flex flex-wrap items-start justify-between gap-4">
-              <div className="flex gap-4">
-                <div className="grid h-12 w-12 place-items-center rounded-2xl bg-ink text-sm font-semibold text-paper">
-                  {initials(company.name)}
-                </div>
-                <div>
-                  <h2 className="font-display text-2xl">{company.name}</h2>
-                  <p className="text-sm text-muted">
-                    {company.industry} · {company.location} · {company.companySize}{" "}
-                    people
-                  </p>
-                  <p className="mt-2 max-w-2xl text-sm leading-6 text-ink/80">
-                    {company.description}
-                  </p>
-                </div>
-              </div>
-              <Link
-                to="/recruiter/company"
-                className="rounded-full border border-line px-4 py-2 text-sm font-medium"
-              >
-                Edit company
-              </Link>
-            </div>
-          ) : (
-            <div>
-              <h2 className="font-display text-2xl">No company yet</h2>
-              <p className="mt-2 max-w-xl text-sm text-muted">
-                A job has to point at a company you own. Create the company
-                first, then post a role.
+      {!loading && mode === "overview" ? (
+        <ul className="mb-8 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {statCards.map((card) => (
+            <li key={card.label} className="rounded-3xl border border-line bg-card px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                {card.label}
               </p>
-            </div>
-          )}
-        </section>
+              <p className="mt-2 font-display text-4xl">{card.value}</p>
+            </li>
+          ))}
+        </ul>
+      ) : null}
+
+      {!loading && !company ? (
+        <div className="rounded-3xl border border-dashed border-line bg-card px-6 py-12">
+          <p className="font-display text-2xl">No company yet</p>
+          <p className="mt-2 max-w-xl text-sm text-muted">
+            A job has to point at a company you own. Create the company first, then post a role.
+          </p>
+          <Link to="/recruiter/company" className="mt-4 inline-block text-sm font-semibold text-pine">
+            Create company
+          </Link>
+        </div>
       ) : null}
 
       {!loading && company && jobs.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-line bg-card px-6 py-12 text-center">
           <p className="font-display text-2xl">No jobs posted</p>
-          <Link
-            to="/recruiter/jobs/new"
-            className="mt-3 inline-block text-sm font-semibold text-pine"
-          >
+          <Link to="/recruiter/jobs/new" className="mt-3 inline-block text-sm font-semibold text-pine">
             Post the first role
           </Link>
         </div>
       ) : null}
 
-      <ul className="grid gap-3">
-        {jobs.map((job) => (
-          <li
-            key={job._id}
-            className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-line bg-card px-5 py-4"
-          >
-            <div>
-              <div className="flex flex-wrap items-center gap-2">
-                <h3 className="font-display text-2xl">{job.title}</h3>
-                <Badge tone={statusTone(job.status)}>{formatLabel(job.status)}</Badge>
-              </div>
-              <p className="text-sm text-muted">
-                {job.location} · {formatLabel(job.employmentType)} ·{" "}
-                {formatLabel(job.workMode)} · {formatSalary(job.salaryMin, job.salaryMax)}
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Link
-                to={`/recruiter/jobs/${job._id}/applicants`}
-                className="rounded-full bg-ink px-3 py-1.5 text-sm font-medium text-paper"
-              >
-                Applicants
-              </Link>
-              <Link
-                to={`/recruiter/jobs/${job._id}/edit`}
-                className="rounded-full border border-line px-3 py-1.5 text-sm font-medium"
-              >
-                Edit
-              </Link>
-            </div>
-          </li>
-        ))}
-      </ul>
+      {!loading && jobs.length > 0 ? (
+        <div className="overflow-x-auto rounded-3xl border border-line bg-card">
+          <table className="w-full min-w-[720px] text-left text-sm">
+            <thead className="border-b border-line text-xs uppercase tracking-[0.12em] text-muted">
+              <tr>
+                <th className="px-5 py-3 font-semibold">Title</th>
+                <th className="px-5 py-3 font-semibold">Location</th>
+                <th className="px-5 py-3 font-semibold">Work mode</th>
+                <th className="px-5 py-3 font-semibold">Applicants</th>
+                <th className="px-5 py-3 font-semibold">Status</th>
+                <th className="px-5 py-3 font-semibold"> </th>
+              </tr>
+            </thead>
+            <tbody>
+              {jobs.map((job) => (
+                <tr key={job._id} className="border-b border-line last:border-0">
+                  <td className="px-5 py-4 font-medium">{job.title}</td>
+                  <td className="px-5 py-4 text-muted">{job.location}</td>
+                  <td className="px-5 py-4">{formatLabel(job.workMode)}</td>
+                  <td className="px-5 py-4">{counts[job._id] ?? "…"}</td>
+                  <td className="px-5 py-4">
+                    <Badge tone={statusTone(job.status)}>{formatLabel(job.status)}</Badge>
+                  </td>
+                  <td className="px-5 py-4">
+                    <div className="flex justify-end gap-2">
+                      <Link
+                        to={`/recruiter/jobs/${job._id}/applicants`}
+                        className="rounded-full bg-ink px-3 py-1.5 text-sm font-medium text-paper"
+                      >
+                        Applicants
+                      </Link>
+                      <Link
+                        to={`/recruiter/jobs/${job._id}/edit`}
+                        className="rounded-full border border-line px-3 py-1.5 text-sm font-medium"
+                      >
+                        Edit
+                      </Link>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      ) : null}
     </div>
   );
 }

@@ -12,13 +12,14 @@ const workModes = ["remote", "hybrid", "onsite"];
 
 function ProfileForm() {
   const setUser = useAuthStore((state) => state.setUser);
+  const [skills, setSkills] = useState([]);
+  const [skillDraft, setSkillDraft] = useState("");
   const [loading, setLoading] = useState(true);
   const [errorMessage, setErrorMessage] = useState("");
   const [saved, setSaved] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const { register, handleSubmit, reset } = useForm({
     defaultValues: {
-      skills: "",
       yearsOfExperience: "0",
       preferredRole: "",
       location: "",
@@ -37,7 +38,6 @@ function ProfileForm() {
           return;
         }
         reset({
-          skills: (user.skills || []).join(", "),
           yearsOfExperience: String(user.yearsOfExperience ?? 0),
           preferredRole: user.preferredRole || "",
           location: user.location || "",
@@ -45,6 +45,7 @@ function ProfileForm() {
           salaryMin: user.salaryMin ?? "",
           salaryMax: user.salaryMax ?? "",
         });
+        setSkills(user.skills || []);
       } catch (err) {
         if (!cancelled) {
           setErrorMessage(apiError(err, "Could not load your profile."));
@@ -64,10 +65,6 @@ function ProfileForm() {
   async function onSubmit(data) {
     setErrorMessage("");
     setSaved("");
-    const skills = data.skills
-      .split(",")
-      .map((skill) => skill.trim())
-      .filter(Boolean);
     const yearsOfExperience = Number(data.yearsOfExperience);
     const salaryMin = Number(data.salaryMin);
     const salaryMax = Number(data.salaryMax);
@@ -114,6 +111,20 @@ function ProfileForm() {
     }
   }
 
+  function addSkill(event) {
+    event.preventDefault();
+    const next = skillDraft.trim();
+    if (!next) {
+      return;
+    }
+    if (skills.some((skill) => skill.toLowerCase() === next.toLowerCase())) {
+      setSkillDraft("");
+      return;
+    }
+    setSkills((current) => [...current, next]);
+    setSkillDraft("");
+  }
+
   return (
     <div>
       <PageHeader
@@ -137,14 +148,47 @@ function ProfileForm() {
             </Field>
           </div>
           <div className="sm:col-span-2">
-            <Field label="Skills" htmlFor="skills">
+            <p className="text-sm font-medium text-ink">Skills</p>
+            <ul className="mt-2 flex flex-wrap gap-2">
+              {skills.map((skill) => (
+                <li key={skill}>
+                  <button
+                    type="button"
+                    onClick={() =>
+                      setSkills((current) => current.filter((item) => item !== skill))
+                    }
+                    className="rounded-full bg-pine/10 px-3 py-1 text-sm text-pine-dark"
+                  >
+                    {skill} <span aria-hidden="true">×</span>
+                    <span className="sr-only">Remove {skill}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+            <div className="mt-3 flex gap-2">
               <input
-                id="skills"
+                id="skillDraft"
                 className={inputClass}
-                placeholder="React, CSS"
-                {...register("skills")}
+                value={skillDraft}
+                onChange={(event) => setSkillDraft(event.target.value)}
+                onKeyDown={(event) => {
+                  if (event.key === "Enter") {
+                    addSkill(event);
+                  }
+                }}
+                placeholder="Add a skill"
               />
-            </Field>
+              <button
+                type="button"
+                onClick={addSkill}
+                className="rounded-full border border-line px-4 text-sm font-medium"
+              >
+                Add
+              </button>
+            </div>
+          </div>
+          <div className="sm:col-span-2">
+            <h2 className="font-display text-2xl">Experience</h2>
           </div>
           <Field label="Years of experience" htmlFor="yearsOfExperience">
             <input
@@ -156,6 +200,9 @@ function ProfileForm() {
               {...register("yearsOfExperience")}
             />
           </Field>
+          <div className="sm:col-span-2">
+            <h2 className="font-display text-2xl">Location</h2>
+          </div>
           <Field label="Location" htmlFor="location">
             <input id="location" className={inputClass} {...register("location")} />
           </Field>
@@ -168,6 +215,9 @@ function ProfileForm() {
               ))}
             </select>
           </Field>
+          <div className="sm:col-span-2">
+            <h2 className="font-display text-2xl">Salary</h2>
+          </div>
           <Field label="Minimum salary" htmlFor="salaryMin">
             <input id="salaryMin" type="number" min="0" className={inputClass} {...register("salaryMin")} />
           </Field>

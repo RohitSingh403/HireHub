@@ -12,6 +12,17 @@ import { fetchJob } from "../../jobs/services/jobService.js";
 import apiError from "../../../utils/apiError.js";
 import { formatDate, formatLabel, statusTone } from "../../../utils/format.js";
 
+const stages = [
+  "all",
+  "applied",
+  "screening",
+  "shortlisted",
+  "interview",
+  "offer",
+  "hired",
+  "rejected",
+];
+
 function Applicants() {
   const { id } = useParams();
   const [job, setJob] = useState(null);
@@ -22,6 +33,7 @@ function Applicants() {
   const [error, setError] = useState("");
   const [rowError, setRowError] = useState("");
   const [savingId, setSavingId] = useState("");
+  const [stage, setStage] = useState("all");
 
   useEffect(() => {
     let cancelled = false;
@@ -93,17 +105,36 @@ function Applicants() {
     }
   }
 
+  const visible =
+    stage === "all"
+      ? applications
+      : applications.filter((application) => application.status === stage);
+
   return (
     <div>
-      <Link to="/recruiter" className="text-sm font-medium text-pine">
-        ← Overview
+      <Link to="/recruiter/jobs" className="text-sm font-medium text-pine">
+        ← Jobs
       </Link>
       <div className="mt-4">
         <PageHeader
           eyebrow="Applicants"
           title={job?.title || "Applicants"}
-          text="Ranked with the same match as the candidate feed. Move one stage forward, or reject. Hired and rejected cannot change again."
+          text="Sorted by match. Move one legal stage forward, or reject."
         />
+      </div>
+      <div className="mb-4 flex gap-2 overflow-x-auto pb-1">
+        {stages.map((item) => (
+          <button
+            key={item}
+            type="button"
+            onClick={() => setStage(item)}
+            className={`shrink-0 rounded-full px-3 py-1.5 text-sm font-medium ${
+              stage === item ? "bg-ink text-paper" : "bg-card text-muted"
+            }`}
+          >
+            {item === "all" ? "All" : formatLabel(item)}
+          </button>
+        ))}
       </div>
       <Alert>{error || rowError}</Alert>
       {loading ? <p className="text-muted">Loading applicants…</p> : null}
@@ -115,48 +146,56 @@ function Applicants() {
           </p>
         </div>
       ) : null}
+      {!loading && applications.length > 0 && visible.length === 0 ? (
+        <p className="text-sm text-muted">No applicants in this stage on the loaded pages.</p>
+      ) : null}
       <ul className="grid gap-3">
-        {applications.map((application) => {
+        {visible.map((application) => {
           const candidate = application.candidate;
+          const percent = application.match?.overall;
           return (
             <li
               key={application._id}
-              className="grid gap-4 rounded-3xl border border-line bg-card px-5 py-4 lg:grid-cols-[minmax(0,1fr)_280px]"
+              className="rounded-3xl border border-line bg-card px-5 py-4"
             >
-              <div>
-                <p className="font-medium">{candidate?.name || "Candidate"}</p>
-                <p className="text-sm text-muted">{candidate?.email}</p>
-                <p className="mt-1 text-xs text-muted">
-                  Applied {formatDate(application.createdAt)}
-                </p>
-                <div className="mt-4">
-                  <MatchBreakdown match={application.match} />
+              <div className="flex flex-wrap items-center justify-between gap-3">
+                <div>
+                  <p className="font-medium">{candidate?.name || "Candidate"}</p>
+                  <p className="text-sm text-muted">
+                    Applied {formatDate(application.createdAt)}
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-center gap-3">
+                  <p className="font-display text-3xl text-pine-dark">
+                    {percent === undefined || percent === null ? "—" : `${percent}%`}
+                  </p>
+                  <Badge tone={statusTone(application.status)}>
+                    {formatLabel(application.status)}
+                  </Badge>
                 </div>
               </div>
-              <div>
-                <Badge tone={statusTone(application.status)}>
-                  {formatLabel(application.status)}
-                </Badge>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {(application.nextStatuses || []).map((status) => (
-                    <button
-                      key={status}
-                      type="button"
-                      disabled={savingId === application._id}
-                      onClick={() => changeStatus(application._id, status)}
-                      className={
-                        status === "rejected"
-                          ? "rounded-full border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-800 disabled:opacity-60"
-                          : "rounded-full bg-ink px-3 py-1.5 text-sm font-medium text-paper disabled:opacity-60"
-                      }
-                    >
-                      {formatLabel(status)}
-                    </button>
-                  ))}
-                  {(application.nextStatuses || []).length === 0 ? (
-                    <p className="text-sm text-muted">No further changes</p>
-                  ) : null}
-                </div>
+              <div className="mt-4 flex flex-wrap gap-2">
+                {(application.nextStatuses || []).map((status) => (
+                  <button
+                    key={status}
+                    type="button"
+                    disabled={savingId === application._id}
+                    onClick={() => changeStatus(application._id, status)}
+                    className={
+                      status === "rejected"
+                        ? "rounded-full border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-800 disabled:opacity-60"
+                        : "rounded-full bg-pine px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
+                    }
+                  >
+                    {formatLabel(status)}
+                  </button>
+                ))}
+                {(application.nextStatuses || []).length === 0 ? (
+                  <p className="text-sm text-muted">No further changes</p>
+                ) : null}
+              </div>
+              <div className="mt-4 border-t border-line pt-4">
+                <MatchBreakdown match={application.match} />
               </div>
             </li>
           );

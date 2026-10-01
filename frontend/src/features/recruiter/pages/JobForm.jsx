@@ -11,7 +11,8 @@ import { formatLabel } from "../../../utils/format.js";
 
 const employmentTypes = ["full-time", "part-time", "contract", "internship"];
 const workModes = ["remote", "hybrid", "onsite"];
-const statuses = ["open", "draft", "closed"];
+const createStatuses = ["open", "draft"];
+const editStatuses = ["open", "draft", "closed"];
 
 const emptyValues = {
   title: "",
@@ -164,91 +165,102 @@ function JobForm() {
       {!loading && company ? (
         <form
           onSubmit={handleSubmit(onSubmit)}
-          className="grid max-w-3xl gap-4 rounded-3xl border border-line bg-card p-5 sm:grid-cols-2"
+          className="grid max-w-3xl gap-6"
         >
-          <div className="sm:col-span-2">
-            <Alert>{errorMessage}</Alert>
-            <p className="text-sm text-muted">
-              Posting for <span className="font-medium text-ink">{company.name}</span>
-            </p>
-          </div>
-          <div className="sm:col-span-2">
-            <Field label="Title" htmlFor="title">
-              <input id="title" className={inputClass} {...register("title")} />
-            </Field>
-          </div>
-          <div className="sm:col-span-2">
-            <Field label="Description" htmlFor="description">
-              <textarea id="description" rows={5} className={inputClass} {...register("description")} />
-            </Field>
-          </div>
-          <Field label="Location" htmlFor="location">
-            <input id="location" className={inputClass} {...register("location")} />
-          </Field>
-          <Field label="Experience" htmlFor="experience">
-            <input id="experience" className={inputClass} {...register("experience")} placeholder="2+ years" />
-          </Field>
-          <Field label="Minimum years" htmlFor="experienceMin">
-            <input
-              id="experienceMin"
-              type="number"
-              min="0"
-              className={inputClass}
-              {...register("experienceMin")}
-            />
-          </Field>
-          <Field label="Employment type" htmlFor="employmentType">
-            <select id="employmentType" className={inputClass} {...register("employmentType")}>
-              {employmentTypes.map((type) => (
-                <option key={type} value={type}>
-                  {formatLabel(type)}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Work mode" htmlFor="workMode">
-            <select id="workMode" className={inputClass} {...register("workMode")}>
-              {workModes.map((mode) => (
-                <option key={mode} value={mode}>
-                  {formatLabel(mode)}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <Field label="Minimum salary" htmlFor="salaryMin">
-            <input id="salaryMin" type="number" min="0" className={inputClass} {...register("salaryMin")} />
-          </Field>
-          <Field label="Maximum salary" htmlFor="salaryMax">
-            <input id="salaryMax" type="number" min="0" className={inputClass} {...register("salaryMax")} />
-          </Field>
-          <div className="sm:col-span-2">
-            <Field label="Skills" htmlFor="skills">
-              <input
-                id="skills"
-                className={inputClass}
-                placeholder="React, Node.js"
-                {...register("skills")}
-              />
-            </Field>
-          </div>
-          <Field label="Status" htmlFor="status">
-            <select id="status" className={inputClass} {...register("status")}>
-              {statuses.map((status) => (
-                <option key={status} value={status}>
-                  {formatLabel(status)}
-                </option>
-              ))}
-            </select>
-          </Field>
-          <div className="flex items-end">
-            <button
-              type="submit"
-              disabled={submitting}
-              className="rounded-full bg-pine px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
-            >
-              {submitting ? "Saving…" : isEdit ? "Save job" : "Publish job"}
-            </button>
-          </div>
+          <Alert>{errorMessage}</Alert>
+          <p className="text-sm text-muted">
+            Posting for <span className="font-medium text-ink">{company.name}</span>
+          </p>
+
+          <section className="rounded-3xl border border-line bg-card p-5">
+            <h2 className="font-display text-2xl">Overview</h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <div className="sm:col-span-2">
+                <Field label="Title" htmlFor="title">
+                  <input id="title" className={inputClass} {...register("title")} />
+                </Field>
+              </div>
+              <Field label="Location" htmlFor="location">
+                <input id="location" className={inputClass} {...register("location")} />
+              </Field>
+              <Field label="Status" htmlFor="status">
+                <select id="status" className={inputClass} {...register("status")}>
+                  {(isEdit ? editStatuses : createStatuses).map((status) => (
+                    <option key={status} value={status}>
+                      {formatLabel(status)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Employment type" htmlFor="employmentType">
+                <select id="employmentType" className={inputClass} {...register("employmentType")}>
+                  {employmentTypes.map((type) => (
+                    <option key={type} value={type}>
+                      {formatLabel(type)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+              <Field label="Work mode" htmlFor="workMode">
+                <select id="workMode" className={inputClass} {...register("workMode")}>
+                  {workModes.map((mode) => (
+                    <option key={mode} value={mode}>
+                      {formatLabel(mode)}
+                    </option>
+                  ))}
+                </select>
+              </Field>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-line bg-card p-5">
+            <h2 className="font-display text-2xl">Compensation and experience</h2>
+            <div className="mt-4 grid gap-4 sm:grid-cols-2">
+              <Field label="Minimum salary" htmlFor="salaryMin">
+                <input id="salaryMin" type="number" min="0" className={inputClass} {...register("salaryMin")} />
+              </Field>
+              <Field label="Maximum salary" htmlFor="salaryMax">
+                <input id="salaryMax" type="number" min="0" className={inputClass} {...register("salaryMax")} />
+              </Field>
+              <Field label="Experience" htmlFor="experience">
+                <input id="experience" className={inputClass} {...register("experience")} placeholder="2+ years" />
+              </Field>
+              <Field label="Minimum years" htmlFor="experienceMin">
+                <input
+                  id="experienceMin"
+                  type="number"
+                  min="0"
+                  className={inputClass}
+                  {...register("experienceMin")}
+                />
+              </Field>
+            </div>
+          </section>
+
+          <section className="rounded-3xl border border-line bg-card p-5">
+            <h2 className="font-display text-2xl">Skills and description</h2>
+            <div className="mt-4 grid gap-4">
+              <Field label="Skills" htmlFor="skills">
+                <input
+                  id="skills"
+                  className={inputClass}
+                  placeholder="React, Node.js"
+                  {...register("skills")}
+                />
+              </Field>
+              <Field label="Description" htmlFor="description">
+                <textarea id="description" rows={6} className={inputClass} {...register("description")} />
+              </Field>
+            </div>
+          </section>
+
+          <button
+            type="submit"
+            disabled={submitting}
+            className="w-fit rounded-full bg-pine px-5 py-3 text-sm font-semibold text-white disabled:opacity-60"
+          >
+            {submitting ? "Saving…" : isEdit ? "Save job" : "Publish job"}
+          </button>
         </form>
       ) : null}
     </div>

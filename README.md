@@ -28,7 +28,7 @@ A recruiter owns a company. A company has jobs. A job receives applications from
 | Recruiter | Register, log in, create and update their company, create and edit their jobs, rank applicants, set application status |
 | Admin | A valid role on the user model. Public registration rejects it. There is no admin UI. |
 
-Login sends the account back to the matching home: candidates land on the open-job list, recruiters land on their hiring desk.
+Login sends the account back to the matching home: candidates land on their home, recruiters land on their hiring desk.
 
 ## Ownership
 
@@ -153,7 +153,7 @@ Open the Vite URL. The dev server proxies `/api` to `http://localhost:5001`. For
 ### Click-through
 
 1. Register as a recruiter. Create a company. Post a job, including minimum years, and leave it open.
-2. Log out. Register as a candidate. You land on the open-job list. Save a profile, open Recommended, and read the percent plus the matched and missing skills. Filter the open list, apply, then apply again and read the API error. Open My applications.
+2. Log out. Register as a candidate. You land on your home. Save a profile, open Recommended, and read the percent plus the matched and missing skills. Open roles, filter the list, apply, then apply again and read the API error. Open My applications.
 3. Log in as the recruiter. Open applicants, read the same breakdown, and move the application one stage forward. Log in as the candidate and open that application to read the timeline.
 
 ## API

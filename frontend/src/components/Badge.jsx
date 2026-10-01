@@ -3,7 +3,7 @@ const tones = {
   pine: "border-transparent bg-pine/10 text-pine-dark",
   amber: "border-transparent bg-amber-100 text-amber-950",
   rose: "border-transparent bg-rose-100 text-rose-900",
-  sky: "border-transparent bg-sky-100 text-sky-900",
+  sky: "border-transparent bg-[#efe8dc] text-ink",
 };
 
 function Badge({ children, tone = "neutral" }) {

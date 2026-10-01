@@ -3,7 +3,14 @@ import { Link, Navigate, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import AuthLayout from "../components/AuthLayout.jsx";
-import RoleSelector from "../components/RoleSelector.jsx";
+import RoleCards from "../components/RoleCards.jsx";
+
+const lines = {
+  candidate:
+    "Save a profile, see why a role matches, and follow every application through the pipeline.",
+  recruiter:
+    "Post roles you own, rank applicants with the same match, and move each one stage at a time.",
+};
 import { registerSchema } from "../schemas/authSchema.js";
 import { login, register as registerAccount } from "../services/authService.js";
 import useAuthStore, { useAuthHydrated } from "../../../store/authStore.js";
@@ -58,19 +65,26 @@ function Register() {
     }
   }
 
-  return (
-    <AuthLayout>
-      <RoleSelector
-        selectedRole={selectedRole}
-        setSelectedRole={setSelectedRole}
-      />
+  const buttonLabel =
+    selectedRole === "recruiter"
+      ? "Create recruiter account"
+      : "Create candidate account";
 
+  return (
+    <AuthLayout line={lines[selectedRole]}>
       <h2 className="mt-8 font-display text-3xl text-ink">Create an account</h2>
       <p className="mt-2 text-muted">
         {selectedRole === "recruiter"
           ? "Post roles for a company you own."
           : "Browse open roles and apply once."}
       </p>
+
+      <div className="mt-6">
+        <RoleCards
+          selectedRole={selectedRole}
+          setSelectedRole={setSelectedRole}
+        />
+      </div>
 
       <form onSubmit={handleSubmit(onSubmit)} className="mt-6 flex flex-col gap-4">
         <Alert>{errorMessage}</Alert>
@@ -116,7 +130,7 @@ function Register() {
           disabled={submitting}
           className="mt-2 rounded-full bg-pine px-4 py-3 text-sm font-semibold text-white hover:bg-pine-dark disabled:opacity-60"
         >
-          {submitting ? "Creating account…" : "Create account"}
+          {submitting ? "Creating account…" : buttonLabel}
         </button>
       </form>
 

@@ -1,4 +1,6 @@
 import { BrowserRouter, Navigate, Route, Routes } from "react-router-dom";
+import PublicHome from "../pages/PublicHome.jsx";
+import CandidateHome from "../pages/CandidateHome.jsx";
 import Login from "../features/auth/pages/Login.jsx";
 import Register from "../features/auth/pages/Register.jsx";
 import JobList from "../features/jobs/pages/JobList.jsx";
@@ -16,7 +18,7 @@ import ProtectedRoute from "../components/ProtectedRoute.jsx";
 import { homePath } from "../utils/homePath.js";
 import useAuthStore, { useAuthHydrated } from "../store/authStore.js";
 
-function HomeRedirect() {
+function HomeGate() {
   const hydrated = useAuthHydrated();
   const isAuthenticated = useAuthStore((state) => state.isAuthenticated);
   const user = useAuthStore((state) => state.user);
@@ -27,11 +29,11 @@ function HomeRedirect() {
     );
   }
 
-  if (!isAuthenticated) {
-    return <Navigate to="/login" replace />;
+  if (isAuthenticated) {
+    return <Navigate to={homePath(user?.role)} replace />;
   }
 
-  return <Navigate to={homePath(user?.role)} replace />;
+  return <PublicHome />;
 }
 
 function AppRouter() {
@@ -43,6 +45,7 @@ function AppRouter() {
 
         <Route element={<ProtectedRoute role="candidate" />}>
           <Route element={<DashboardLayout />}>
+            <Route path="/home" element={<CandidateHome />} />
             <Route path="/jobs" element={<JobList />} />
             <Route path="/jobs/:id" element={<JobDetail />} />
             <Route path="/recommended" element={<RecommendedJobs />} />
@@ -55,6 +58,7 @@ function AppRouter() {
         <Route element={<ProtectedRoute role="recruiter" />}>
           <Route element={<DashboardLayout />}>
             <Route path="/recruiter" element={<RecruiterHome />} />
+            <Route path="/recruiter/jobs" element={<RecruiterHome mode="jobs" />} />
             <Route path="/recruiter/company" element={<CompanyForm />} />
             <Route path="/recruiter/jobs/new" element={<JobForm />} />
             <Route path="/recruiter/jobs/:id/edit" element={<JobForm />} />
@@ -62,8 +66,8 @@ function AppRouter() {
           </Route>
         </Route>
 
-        <Route path="/" element={<HomeRedirect />} />
-        <Route path="*" element={<HomeRedirect />} />
+        <Route path="/" element={<HomeGate />} />
+        <Route path="*" element={<HomeGate />} />
       </Routes>
     </BrowserRouter>
   );

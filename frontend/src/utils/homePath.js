@@ -1,3 +1,3 @@
 export function homePath(role) {
-  return role === "recruiter" ? "/recruiter" : "/jobs";
+  return role === "recruiter" ? "/recruiter" : "/home";
 }

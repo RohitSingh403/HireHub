@@ -46,10 +46,38 @@ function MyApplications() {
       <PageHeader
         eyebrow="Candidates"
         title="My applications"
-        text="Each role can be applied to once. Open an application to read the timeline. Only the recruiter can move it."
+        text="Each role can be applied to once. Open a row to read the timeline. Only the recruiter can move it."
       />
       <Alert>{error}</Alert>
       {loading ? <p className="text-muted">Loading applications…</p> : null}
+      {!loading && !error ? (
+        <ul className="mb-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {[
+            { label: "Applications", value: applications.length },
+            {
+              label: "In progress",
+              value: applications.filter(
+                (item) => item.status !== "hired" && item.status !== "rejected",
+              ).length,
+            },
+            {
+              label: "Hired",
+              value: applications.filter((item) => item.status === "hired").length,
+            },
+            {
+              label: "Rejected",
+              value: applications.filter((item) => item.status === "rejected").length,
+            },
+          ].map((count) => (
+            <li key={count.label} className="rounded-3xl border border-line bg-card px-5 py-4">
+              <p className="text-xs font-semibold uppercase tracking-[0.14em] text-muted">
+                {count.label}
+              </p>
+              <p className="mt-2 font-display text-4xl">{count.value}</p>
+            </li>
+          ))}
+        </ul>
+      ) : null}
       {!loading && !error && applications.length === 0 ? (
         <div className="rounded-3xl border border-dashed border-line bg-card px-6 py-12 text-center">
           <p className="font-display text-2xl">No applications yet</p>

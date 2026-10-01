@@ -31,8 +31,10 @@ function CompanyForm() {
     register,
     handleSubmit,
     reset,
+    watch,
     formState: { errors },
   } = useForm({ defaultValues: emptyValues });
+  const watched = watch();
 
   useEffect(() => {
     let cancelled = false;
@@ -111,7 +113,31 @@ function CompanyForm() {
       />
       {loading ? <p className="text-muted">Loading company…</p> : null}
       {!loading ? (
-        <form
+        <>
+          <header className="mb-6 rounded-3xl border border-line bg-card p-6">
+            <h2 className="font-display text-4xl">{watched.name || "Your company"}</h2>
+            <dl className="mt-4 grid gap-3 text-sm sm:grid-cols-2 lg:grid-cols-4">
+              <div>
+                <dt className="text-muted">Website</dt>
+                <dd className="mt-1 break-all">{watched.website || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-muted">Location</dt>
+                <dd className="mt-1">{watched.location || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-muted">Industry</dt>
+                <dd className="mt-1">{watched.industry || "—"}</dd>
+              </div>
+              <div>
+                <dt className="text-muted">Size</dt>
+                <dd className="mt-1">
+                  {watched.companySize ? `${watched.companySize} people` : "—"}
+                </dd>
+              </div>
+            </dl>
+          </header>
+          <form
           onSubmit={handleSubmit(onSubmit)}
           className="grid max-w-3xl gap-4 rounded-3xl border border-line bg-card p-5 sm:grid-cols-2"
         >
@@ -150,7 +176,8 @@ function CompanyForm() {
               {submitting ? "Saving…" : companyId ? "Save changes" : "Create company"}
             </button>
           </div>
-        </form>
+          </form>
+        </>
       ) : null}
     </div>
   );

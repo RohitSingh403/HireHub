@@ -2,33 +2,33 @@ import { useEffect, useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 import PageHeader from "../../../components/PageHeader.jsx";
 import Alert from "../../../components/Alert.jsx";
-import Badge from "../../../components/Badge.jsx";
+import JobCard from "../../../components/JobCard.jsx";
 import Field, { inputClass } from "../../../components/Field.jsx";
-import { fetchJobs } from "../services/jobService.js";
+import { fetchJobs, matchScoresFor } from "../services/jobService.js";
+import useAuthStore from "../../../store/authStore.js";
 import apiError from "../../../utils/apiError.js";
-import {
-  companyName,
-  formatLabel,
-  formatSalary,
-  initials,
-} from "../../../utils/format.js";
+import { formatLabel } from "../../../utils/format.js";
 
 const employmentTypes = ["full-time", "part-time", "contract", "internship"];
 const workModes = ["remote", "hybrid", "onsite"];
 
 function JobList() {
+  const user = useAuthStore((state) => state.user);
+  const hasProfile = (user?.skills || []).length > 0;
   const [params, setParams] = useSearchParams();
   const [draft, setDraft] = useState({
     keyword: params.get("keyword") ?? "",
     location: params.get("location") ?? "",
-    employmentType: params.get("employmentType") ?? "",
-    workMode: params.get("workMode") ?? "",
   });
   const [jobs, setJobs] = useState([]);
+  const [scores, setScores] = useState({});
   const [nextCursor, setNextCursor] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState("");
+
+  const employmentType = params.get("employmentType") ?? "";
+  const workMode = params.get("workMode") ?? "";
 
   useEffect(() => {
     const filters = {
@@ -43,9 +43,15 @@ function JobList() {
       setError("");
       try {
         const page = await fetchJobs(filters);
-        if (!cancelled) {
-          setJobs(page.jobs);
-          setNextCursor(page.nextCursor);
+        if (cancelled) {
+          return;
+        }
+        setJobs(page.jobs);
+        setNextCursor(page.nextCursor);
+        if (hasProfile) {
+          setScores(await matchScoresFor(page.jobs.map((job) => job._id)));
+        } else {
+          setScores({});
         }
       } catch (err) {
         if (!cancelled) {
@@ -61,21 +67,40 @@ function JobList() {
     return () => {
       cancelled = true;
     };
-  }, [params]);
+  }, [params, hasProfile]);
 
   function updateDraft(key, value) {
     setDraft((current) => ({ ...current, [key]: value }));
   }
 
-  function applyFilters(event) {
+  function applySearch(event) {
     event.preventDefault();
-    const next = {};
-    for (const [key, value] of Object.entries(draft)) {
-      if (value) {
-        next[key] = value;
+    const next = Object.fromEntries(params.entries());
+    for (const key of ["keyword", "location"]) {
+      if (draft[key]) {
+        next[key] = draft[key];
+      } else {
+        delete next[key];
       }
     }
     setParams(next);
+  }
+
+  function setFilter(key, value) {
+    const next = Object.fromEntries(params.entries());
+    if (next[key] === value) {
+      delete next[key];
+    } else if (value) {
+      next[key] = value;
+    } else {
+      delete next[key];
+    }
+    setParams(next);
+  }
+
+  function clearFilters() {
+    setDraft({ keyword: "", location: "" });
+    setParams({});
   }
 
   async function loadMore() {
@@ -88,12 +113,16 @@ function JobList() {
       const page = await fetchJobs({
         keyword: params.get("keyword") ?? "",
         location: params.get("location") ?? "",
-        employmentType: params.get("employmentType") ?? "",
-        workMode: params.get("workMode") ?? "",
+        employmentType,
+        workMode,
         cursor: nextCursor,
       });
-      setJobs((current) => [...current, ...page.jobs]);
+      const combined = [...jobs, ...page.jobs];
+      setJobs(combined);
       setNextCursor(page.nextCursor);
+      if (hasProfile) {
+        setScores(await matchScoresFor(combined.map((job) => job._id)));
+      }
     } catch (err) {
       setError(apiError(err, "Could not load jobs."));
     } finally {
@@ -101,39 +130,27 @@ function JobList() {
     }
   }
 
-  function clearFilters() {
-    setDraft({
-      keyword: "",
-      location: "",
-      employmentType: "",
-      workMode: "",
-    });
-    setParams({});
-  }
-
   return (
     <div>
       <PageHeader
         eyebrow="Candidates"
         title="Open roles"
-        text="Only jobs marked open are listed. Search by keyword, or narrow by location, employment type, and work mode."
+        text="Search by keyword or city. Narrow by work mode and employment type. The percent shows when your profile has skills."
       />
 
       <form
-        onSubmit={applyFilters}
-        className="mb-6 grid gap-4 rounded-3xl border border-line bg-card p-4 sm:grid-cols-2 lg:grid-cols-6"
+        onSubmit={applySearch}
+        className="mb-6 grid gap-3 rounded-3xl border border-line bg-card p-4 sm:grid-cols-[minmax(0,1fr)_minmax(0,1fr)_auto]"
       >
-        <div className="lg:col-span-2">
-          <Field label="Keyword" htmlFor="keyword">
-            <input
-              id="keyword"
-              className={inputClass}
-              value={draft.keyword}
-              onChange={(event) => updateDraft("keyword", event.target.value)}
-              placeholder="Title, skill, or description"
-            />
-          </Field>
-        </div>
+        <Field label="Keyword" htmlFor="keyword">
+          <input
+            id="keyword"
+            className={inputClass}
+            value={draft.keyword}
+            onChange={(event) => updateDraft("keyword", event.target.value)}
+            placeholder="Title, skill, or description"
+          />
+        </Field>
         <Field label="Location" htmlFor="location">
           <input
             id="location"
@@ -143,42 +160,10 @@ function JobList() {
             placeholder="City"
           />
         </Field>
-        <Field label="Employment type" htmlFor="employmentType">
-          <select
-            id="employmentType"
-            className={inputClass}
-            value={draft.employmentType}
-            onChange={(event) =>
-              updateDraft("employmentType", event.target.value)
-            }
-          >
-            <option value="">Any</option>
-            {employmentTypes.map((type) => (
-              <option key={type} value={type}>
-                {formatLabel(type)}
-              </option>
-            ))}
-          </select>
-        </Field>
-        <Field label="Work mode" htmlFor="workMode">
-          <select
-            id="workMode"
-            className={inputClass}
-            value={draft.workMode}
-            onChange={(event) => updateDraft("workMode", event.target.value)}
-          >
-            <option value="">Any</option>
-            {workModes.map((mode) => (
-              <option key={mode} value={mode}>
-                {formatLabel(mode)}
-              </option>
-            ))}
-          </select>
-        </Field>
         <div className="flex items-end gap-2">
           <button
             type="submit"
-            className="rounded-full bg-ink px-4 py-2.5 text-sm font-semibold text-paper"
+            className="rounded-full bg-pine px-4 py-2.5 text-sm font-semibold text-white"
           >
             Search
           </button>
@@ -192,74 +177,78 @@ function JobList() {
         </div>
       </form>
 
-      <Alert>{error}</Alert>
+      <div className="grid gap-6 lg:grid-cols-[220px_minmax(0,1fr)]">
+        <aside className="h-fit rounded-3xl border border-line bg-card p-4">
+          <fieldset>
+            <legend className="text-sm font-semibold">Work mode</legend>
+            <div className="mt-2 grid gap-1">
+              {workModes.map((mode) => (
+                <label key={mode} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={workMode === mode}
+                    onChange={() => setFilter("workMode", mode)}
+                  />
+                  {formatLabel(mode)}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+          <fieldset className="mt-5">
+            <legend className="text-sm font-semibold">Employment type</legend>
+            <div className="mt-2 grid gap-1">
+              {employmentTypes.map((type) => (
+                <label key={type} className="flex items-center gap-2 text-sm">
+                  <input
+                    type="checkbox"
+                    checked={employmentType === type}
+                    onChange={() => setFilter("employmentType", type)}
+                  />
+                  {formatLabel(type)}
+                </label>
+              ))}
+            </div>
+          </fieldset>
+        </aside>
 
-      {loading ? <p className="text-muted">Loading open roles…</p> : null}
-
-      {!loading && !error && jobs.length === 0 ? (
-        <div className="rounded-3xl border border-dashed border-line bg-card px-6 py-12 text-center">
-          <p className="font-display text-2xl">No open roles match</p>
-          <p className="mt-2 text-muted">
-            Try a broader keyword, or clear the filters.
-          </p>
+        <div>
+          <Alert>{error}</Alert>
+          {loading ? <p className="text-muted">Loading open roles…</p> : null}
+          {!loading && !error && jobs.length === 0 ? (
+            <div className="rounded-3xl border border-dashed border-line bg-card px-6 py-12 text-center">
+              <p className="font-display text-2xl">No open roles match</p>
+              <p className="mt-2 text-muted">Try a broader keyword, or clear the filters.</p>
+            </div>
+          ) : null}
+          <ul className="grid gap-4 md:grid-cols-2">
+            {jobs.map((job) => (
+              <li key={job._id}>
+                <JobCard job={job} match={hasProfile ? scores[job._id] : undefined} />
+              </li>
+            ))}
+          </ul>
+          {nextCursor ? (
+            <div className="mt-6 flex justify-center">
+              <button
+                type="button"
+                onClick={loadMore}
+                disabled={loadingMore}
+                className="rounded-full border border-line bg-card px-5 py-2.5 text-sm font-semibold disabled:opacity-60"
+              >
+                {loadingMore ? "Loading…" : "Load more"}
+              </button>
+            </div>
+          ) : null}
+          {!hasProfile && !loading ? (
+            <p className="mt-4 text-sm text-muted">
+              <Link to="/profile" className="font-semibold text-pine">
+                Save a profile
+              </Link>{" "}
+              to see a match percent on each role.
+            </p>
+          ) : null}
         </div>
-      ) : null}
-
-      <ul className="grid gap-4">
-        {jobs.map((job) => (
-          <li key={job._id}>
-            <Link
-              to={`/jobs/${job._id}`}
-              className="block rounded-3xl border border-line bg-card p-5 transition hover:-translate-y-0.5 hover:border-pine/40"
-            >
-              <div className="flex items-start gap-4">
-                <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-pine/10 font-semibold text-pine-dark">
-                  {initials(companyName(job.company))}
-                </div>
-                <div className="min-w-0 flex-1">
-                  <div className="flex flex-wrap items-start justify-between gap-2">
-                    <div>
-                      <h2 className="font-display text-2xl leading-tight">
-                        {job.title}
-                      </h2>
-                      <p className="text-sm text-muted">
-                        {companyName(job.company)} · {job.location}
-                      </p>
-                    </div>
-                    <p className="text-sm font-medium">
-                      {formatSalary(job.salaryMin, job.salaryMax)}
-                    </p>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <Badge>{formatLabel(job.employmentType)}</Badge>
-                    <Badge>{formatLabel(job.workMode)}</Badge>
-                    <Badge tone="neutral">{job.experience}</Badge>
-                  </div>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    {(job.skills || []).slice(0, 4).map((skill) => (
-                      <span key={skill} className="text-xs text-muted">
-                        {skill}
-                      </span>
-                    ))}
-                  </div>
-                </div>
-              </div>
-            </Link>
-          </li>
-        ))}
-      </ul>
-      {nextCursor ? (
-        <div className="mt-6 flex justify-center">
-          <button
-            type="button"
-            onClick={loadMore}
-            disabled={loadingMore}
-            className="rounded-full border border-line bg-card px-5 py-2.5 text-sm font-semibold disabled:opacity-60"
-          >
-            {loadingMore ? "Loading…" : "Load more"}
-          </button>
-        </div>
-      ) : null}
+      </div>
     </div>
   );
 }
