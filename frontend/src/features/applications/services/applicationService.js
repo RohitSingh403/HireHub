@@ -10,6 +10,11 @@ async function fetchMyApplications() {
   return response.data.applications;
 }
 
+async function fetchMyApplication(id) {
+  const response = await api.get(`/api/applications/${id}`);
+  return response.data.application;
+}
+
 async function fetchJobApplications(jobId) {
   const response = await api.get(`/api/jobs/${jobId}/applications`);
   return response.data.applications;
@@ -25,6 +30,7 @@ async function updateApplicationStatus(id, status) {
 export {
   applyToJob,
   fetchMyApplications,
+  fetchMyApplication,
   fetchJobApplications,
   updateApplicationStatus,
 };

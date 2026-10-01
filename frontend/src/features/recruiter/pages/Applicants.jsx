@@ -4,7 +4,6 @@ import Alert from "../../../components/Alert.jsx";
 import Badge from "../../../components/Badge.jsx";
 import MatchBreakdown from "../../../components/MatchBreakdown.jsx";
 import PageHeader from "../../../components/PageHeader.jsx";
-import { inputClass } from "../../../components/Field.jsx";
 import {
   fetchJobApplications,
   updateApplicationStatus,
@@ -12,8 +11,6 @@ import {
 import { fetchJob } from "../../jobs/services/jobService.js";
 import apiError from "../../../utils/apiError.js";
 import { formatDate, formatLabel, statusTone } from "../../../utils/format.js";
-
-const statuses = ["applied", "shortlisted", "rejected", "hired"];
 
 function Applicants() {
   const { id } = useParams();
@@ -56,11 +53,16 @@ function Applicants() {
     setRowError("");
     setSavingId(applicationId);
     try {
-      await updateApplicationStatus(applicationId, status);
+      const response = await updateApplicationStatus(applicationId, status);
       setApplications((current) =>
         current.map((application) =>
           application._id === applicationId
-            ? { ...application, status }
+            ? {
+                ...application,
+                status: response.application.status,
+                statusHistory: response.application.statusHistory,
+                nextStatuses: response.application.nextStatuses,
+              }
             : application,
         ),
       );
@@ -80,7 +82,7 @@ function Applicants() {
         <PageHeader
           eyebrow="Applicants"
           title={job?.title || "Applicants"}
-          text="Ranked with the same match as the candidate feed. Highest percent first. Status is still applied, shortlisted, rejected, or hired."
+          text="Ranked with the same match as the candidate feed. Move one stage forward, or reject. Hired and rejected cannot change again."
         />
       </div>
       <Alert>{error || rowError}</Alert>
@@ -111,28 +113,30 @@ function Applicants() {
                   <MatchBreakdown match={application.match} />
                 </div>
               </div>
-              <div className="flex items-start gap-3">
+              <div>
                 <Badge tone={statusTone(application.status)}>
                   {formatLabel(application.status)}
                 </Badge>
-                <label className="sr-only" htmlFor={`status-${application._id}`}>
-                  Status for {candidate?.name || "candidate"}
-                </label>
-                <select
-                  id={`status-${application._id}`}
-                  className={inputClass}
-                  value={application.status}
-                  disabled={savingId === application._id}
-                  onChange={(event) =>
-                    changeStatus(application._id, event.target.value)
-                  }
-                >
-                  {statuses.map((status) => (
-                    <option key={status} value={status}>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {(application.nextStatuses || []).map((status) => (
+                    <button
+                      key={status}
+                      type="button"
+                      disabled={savingId === application._id}
+                      onClick={() => changeStatus(application._id, status)}
+                      className={
+                        status === "rejected"
+                          ? "rounded-full border border-rose-200 px-3 py-1.5 text-sm font-medium text-rose-800 disabled:opacity-60"
+                          : "rounded-full bg-ink px-3 py-1.5 text-sm font-medium text-paper disabled:opacity-60"
+                      }
+                    >
                       {formatLabel(status)}
-                    </option>
+                    </button>
                   ))}
-                </select>
+                  {(application.nextStatuses || []).length === 0 ? (
+                    <p className="text-sm text-muted">No further changes</p>
+                  ) : null}
+                </div>
               </div>
             </li>
           );

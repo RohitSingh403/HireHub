@@ -1,6 +1,6 @@
 # HireHub
 
-HireHub is a small job portal with two working roles. A candidate registers, sees only open jobs, and applies once. A recruiter creates a company, posts jobs, and moves applicants through applied, shortlisted, rejected, and hired.
+HireHub is a small job portal with two working roles. A candidate registers, sees only open jobs, and applies once. A recruiter creates a company, posts jobs, and moves applicants one stage at a time: applied, screening, shortlisted, interview, offer, then hired, or rejected from any open stage.
 
 ## Architecture
 
@@ -59,6 +59,22 @@ The same function ranks applicants on `GET /api/jobs/:jobId/applications`. Owner
 
 A profile with React and CSS, 1 year, Bengaluru, hybrid, and 70,000–110,000 against a hybrid Bengaluru role that requires React and Node.js, 2 years, and 80,000–120,000 scores 65. Skills are 50, experience is 50, location and salary are 100. Node.js is the missing skill.
 
+## Hiring pipeline
+
+Stages move in order: applied → screening → shortlisted → interview → offer → hired. From any stage except hired or rejected, the recruiter may reject instead of advancing. The legal moves are:
+
+- applied → screening or rejected
+- screening → shortlisted or rejected
+- shortlisted → interview or rejected
+- interview → offer or rejected
+- offer → hired or rejected
+
+Skipping a stage, including applied → hired, is 400. hired and rejected accept no further change.
+
+A new application starts at applied with one `statusHistory` entry: the status, the candidate's user id, and a timestamp. Every successful change appends another entry with the new status, the acting user's id, and a timestamp. Applications saved before this timeline, with status applied, shortlisted, rejected, or hired, still load.
+
+The candidate can open the application and read that timeline. A candidate cannot change the status. Another recruiter is still 403.
+
 ## Job reads
 
 `GET /api/jobs` and `GET /api/jobs/:id` use optional auth. They do not use `authMiddleware`.
@@ -98,7 +114,7 @@ npm test
 npm run dev
 ```
 
-`npm test` starts an in-memory MongoDB. It does not use your `.env`. The suite checks: no token 401, wrong role 403, missing resource 404, another recruiter 403, owner success, and a second apply rejected. It also checks open-job reads, JWT expiry, that the password hash is hidden, a known match score, a skill gap, a salary miss, and that a recruiter cannot rank another recruiter's applicants.
+`npm test` starts an in-memory MongoDB. It does not use your `.env`. The suite checks: no token 401, wrong role 403, missing resource 404, another recruiter 403, owner success, and a second apply rejected. It also checks open-job reads, JWT expiry, that the password hash is hidden, a known match score, a skill gap, a salary miss, that a recruiter cannot rank another recruiter's applicants, an illegal stage skip, a rejection from screening, and that a candidate cannot move an application.
 
 ```bash
 cd frontend
@@ -112,7 +128,7 @@ Open the Vite URL. The dev server proxies `/api` to `http://localhost:5001`. For
 
 1. Register as a recruiter. Create a company. Post a job, including minimum years, and leave it open.
 2. Log out. Register as a candidate. You land on the open-job list. Save a profile, open Recommended, and read the percent plus the matched and missing skills. Filter the open list, apply, then apply again and read the API error. Open My applications.
-3. Log in as the recruiter. Open applicants, read the same breakdown, and change the status.
+3. Log in as the recruiter. Open applicants, read the same breakdown, and move the application one stage forward. Log in as the candidate and open that application to read the timeline.
 
 ## API
 
@@ -134,8 +150,9 @@ Open the Vite URL. The dev server proxies `/api` to `http://localhost:5001`. For
 | DELETE | `/api/jobs/:id` | Creating recruiter |
 | POST | `/api/jobs/:jobId/apply` | Candidate, once, and only if the job is open |
 | GET | `/api/applications/me` | Candidate |
-| GET | `/api/jobs/:jobId/applications` | Creating recruiter. Applicants ranked by the same match |
-| PATCH | `/api/applications/:id/status` | Creating recruiter. `applied`, `shortlisted`, `rejected`, `hired` |
+| GET | `/api/applications/:id` | Owning candidate. Includes the timeline |
+| GET | `/api/jobs/:jobId/applications` | Creating recruiter. Applicants ranked by the same match. Each row includes the legal next statuses |
+| PATCH | `/api/applications/:id/status` | Creating recruiter. One stage forward, or rejected. Skip is 400 |
 
 ## Out of scope
 

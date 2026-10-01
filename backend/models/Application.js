@@ -1,4 +1,25 @@
 import mongoose from "mongoose";
+import { APPLICATION_STATUSES } from "../services/pipeline.js";
+
+const statusHistorySchema = new mongoose.Schema(
+  {
+    status: {
+      type: String,
+      enum: APPLICATION_STATUSES,
+      required: true,
+    },
+    actor: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "User",
+      required: true,
+    },
+    timestamp: {
+      type: Date,
+      required: true,
+    },
+  },
+  { _id: false },
+);
 
 const applicationSchema = new mongoose.Schema(
   {
@@ -14,8 +35,12 @@ const applicationSchema = new mongoose.Schema(
     },
     status: {
       type: String,
-      enum: ["applied", "shortlisted", "rejected", "hired"],
+      enum: APPLICATION_STATUSES,
       default: "applied",
+    },
+    statusHistory: {
+      type: [statusHistorySchema],
+      default: [],
     },
   },
   {

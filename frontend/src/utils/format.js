@@ -30,6 +30,19 @@ export function formatDate(value) {
   }).format(new Date(value));
 }
 
+export function formatDateTime(value) {
+  if (!value) {
+    return "";
+  }
+  return new Intl.DateTimeFormat("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    hour: "numeric",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
 export function companyName(company) {
   if (!company || typeof company === "string") {
     return "Company";
@@ -41,13 +54,16 @@ export function statusTone(status) {
   if (status === "hired" || status === "open") {
     return "pine";
   }
-  if (status === "shortlisted") {
+  if (status === "shortlisted" || status === "interview") {
     return "amber";
+  }
+  if (status === "offer") {
+    return "pine";
   }
   if (status === "rejected" || status === "closed") {
     return "rose";
   }
-  if (status === "applied") {
+  if (status === "applied" || status === "screening") {
     return "sky";
   }
   return "neutral";

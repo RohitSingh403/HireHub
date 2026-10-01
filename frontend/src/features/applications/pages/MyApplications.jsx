@@ -46,7 +46,7 @@ function MyApplications() {
       <PageHeader
         eyebrow="Candidates"
         title="My applications"
-        text="Each role can be applied to once. Status updates come from the recruiter who posted it."
+        text="Each role can be applied to once. Open an application to read the timeline. Only the recruiter can move it."
       />
       <Alert>{error}</Alert>
       {loading ? <p className="text-muted">Loading applications…</p> : null}
@@ -67,9 +67,9 @@ function MyApplications() {
               className="flex flex-wrap items-center justify-between gap-3 rounded-3xl border border-line bg-card px-5 py-4"
             >
               <div>
-                <p className="font-display text-2xl">
+                <Link to={`/applications/${application._id}`} className="font-display text-2xl">
                   {job?.title || "Role unavailable"}
-                </p>
+                </Link>
                 <p className="text-sm text-muted">
                   {companyName(job?.company)}
                   {job?.location ? ` · ${job.location}` : ""}

@@ -1,6 +1,7 @@
 import Job from "../models/Job.js";
 import Application from "../models/Application.js";
 import { scoreMatch } from "../services/match.js";
+import { legalNextStatuses, transitionError } from "../services/pipeline.js";
 
 async function applyForJob(req, res, next) {
   try {
@@ -33,6 +34,14 @@ async function applyForJob(req, res, next) {
     const newApplication = await Application.create({
       candidate: candidateId,
       job: jobId,
+      status: "applied",
+      statusHistory: [
+        {
+          status: "applied",
+          actor: candidateId,
+          timestamp: new Date(),
+        },
+      ],
     });
 
     return res.status(201).json({
@@ -97,6 +106,7 @@ async function getJobApplications(req, res, next) {
         return {
           ...plain,
           match: scoreMatch(plain.candidate, jobExist),
+          nextStatuses: legalNextStatuses(plain.status),
         };
       })
       .sort((left, right) => {
@@ -113,6 +123,38 @@ async function getJobApplications(req, res, next) {
     return res.status(200).json({
       msg: "Job applications successfully found",
       applications: ranked,
+    });
+  } catch (err) {
+    next(err);
+  }
+}
+
+async function getMyApplication(req, res, next) {
+  try {
+    const application = await Application.findById(req.params.id)
+      .populate({
+        path: "job",
+        select:
+          "title location employmentType workMode status salaryMin salaryMax company",
+        populate: { path: "company", select: "name logo location" },
+      })
+      .populate("statusHistory.actor", "name");
+
+    if (!application) {
+      return res.status(404).json({
+        msg: "Application not found",
+      });
+    }
+
+    if (application.candidate.toString() !== req.user.userId) {
+      return res.status(404).json({
+        msg: "Application not found",
+      });
+    }
+
+    return res.status(200).json({
+      msg: "Application successfully found",
+      application,
     });
   } catch (err) {
     next(err);
@@ -147,26 +189,38 @@ async function updateApplicationStatus(req, res, next) {
     }
 
     const { status } = req.body;
+    const rejectedMove = transitionError(applicationExist.status, status);
 
-    const allowedStatus = ["applied", "shortlisted", "rejected", "hired"];
-
-    if (!allowedStatus.includes(status)) {
+    if (rejectedMove) {
       return res.status(400).json({
-        msg: "Please input a valid status",
+        msg: rejectedMove,
       });
     }
 
-    await Application.updateOne(
+    const updated = await Application.findByIdAndUpdate(
+      applicationId,
       {
-        _id: applicationId,
+        status,
+        $push: {
+          statusHistory: {
+            status,
+            actor: recruiterId,
+            timestamp: new Date(),
+          },
+        },
       },
       {
-        status: status,
+        returnDocument: "after",
+        runValidators: true,
       },
     );
 
     return res.status(200).json({
       msg: "Application status updated successfully",
+      application: {
+        ...updated.toObject(),
+        nextStatuses: legalNextStatuses(updated.status),
+      },
     });
   } catch (err) {
     next(err);
@@ -176,6 +230,7 @@ async function updateApplicationStatus(req, res, next) {
 export {
   applyForJob,
   getMyApplications,
+  getMyApplication,
   getJobApplications,
   updateApplicationStatus,
 };
