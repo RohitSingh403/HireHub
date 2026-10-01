@@ -20,8 +20,9 @@ function App() {
         if (!cancelled) {
           setUser(user);
         }
-      } catch {
-        if (!cancelled) {
+      } catch (err) {
+        const status = err?.response?.status;
+        if (!cancelled && (status === 401 || status === 404)) {
           logout();
         }
       }

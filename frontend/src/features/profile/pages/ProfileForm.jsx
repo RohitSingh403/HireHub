@@ -81,6 +81,10 @@ function ProfileForm() {
       setErrorMessage("Years of experience cannot be negative.");
       return;
     }
+    if (String(data.salaryMin).trim() === "" || String(data.salaryMax).trim() === "") {
+      setErrorMessage("Enter a minimum and a maximum salary.");
+      return;
+    }
     if (
       !Number.isFinite(salaryMin) ||
       salaryMin < 0 ||
