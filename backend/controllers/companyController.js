@@ -52,8 +52,9 @@ async function getMyCompany(req, res, next) {
     });
 
     if (!company) {
-      return res.status(404).json({
-        msg: "Company not found",
+      return res.status(200).json({
+        msg: "No company yet",
+        company: null,
       });
     }
 

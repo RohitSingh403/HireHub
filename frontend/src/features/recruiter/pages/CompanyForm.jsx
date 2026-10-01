@@ -41,7 +41,7 @@ function CompanyForm() {
     async function load() {
       try {
         const company = await fetchMyCompany();
-        if (cancelled) {
+        if (cancelled || !company) {
           return;
         }
         setCompanyId(company._id);
